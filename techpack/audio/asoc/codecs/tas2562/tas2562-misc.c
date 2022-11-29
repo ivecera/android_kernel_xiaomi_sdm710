@@ -46,24 +46,24 @@ static struct tas2562_priv *g_tas2562;
 
 static int tas2562_file_open(struct inode *inode, struct file *file)
 {
-	struct tas2562_priv *pTAS2562 = g_tas2562;
+	struct tas2562_priv *tas_priv = g_tas2562;
 
 	if (!try_module_get(THIS_MODULE))
 		return -ENODEV;
 
-	file->private_data = (void *)pTAS2562;
+	file->private_data = (void *)tas_priv;
 
 	if (g_logEnable)
-		dev_info(pTAS2562->dev, "%s\n", __func__);
+		dev_info(tas_priv->dev, "%s\n", __func__);
 	return 0;
 }
 
 static int tas2562_file_release(struct inode *inode, struct file *file)
 {
-	struct tas2562_priv *pTAS2562 = (struct tas2562_priv *)file->private_data;
+	struct tas2562_priv *tas_priv = (struct tas2562_priv *)file->private_data;
 
 	if (g_logEnable)
-		dev_info(pTAS2562->dev, "%s\n", __func__);
+		dev_info(tas_priv->dev, "%s\n", __func__);
 
 	file->private_data = (void *)NULL;
 	module_put(THIS_MODULE);
@@ -71,135 +71,133 @@ static int tas2562_file_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t tas2562_file_read(struct file *file, char *buf, size_t count, loff_t *ppos)
+static ssize_t tas2562_file_read(struct file *file, char *dest, size_t count, loff_t *ppos)
 {
-	struct tas2562_priv *pTAS2562 = (struct tas2562_priv *)file->private_data;
+	struct tas2562_priv *tas_priv = (struct tas2562_priv *)file->private_data;
 	int ret = 0;
-	unsigned int nValue = 0;
-	unsigned char value = 0;
-	unsigned char *p_kBuf = NULL;
+	unsigned int value = 0;
+	unsigned char *buf = NULL;
 
-	mutex_lock(&pTAS2562->file_lock);
+	mutex_lock(&tas_priv->file_lock);
 
-	switch (pTAS2562->mnDBGCmd) {
+	switch (tas_priv->debug_cmd) {
 	case TIAUDIO_CMD_REG_READ:
 	{
 		if (g_logEnable)
-			dev_info(pTAS2562->dev,
+			dev_info(tas_priv->dev,
 				"TIAUDIO_CMD_REG_READ: current_reg = 0x%x, count=%d\n",
-				pTAS2562->mnCurrentReg, (int)count);
+				tas_priv->cur_reg, (int)count);
 		if (count == 1) {
-			ret = pTAS2562->read(pTAS2562, pTAS2562->mnCurrentReg, &nValue);
+			ret = tas_priv->read(tas_priv, tas_priv->cur_reg, &value);
 			if (ret < 0) {
-				dev_err(pTAS2562->dev, "dev read fail %d\n", ret);
+				dev_err(tas_priv->dev, "dev read fail %d\n", ret);
 				break;
 			}
 
-			value = (u8)nValue;
 			if (g_logEnable)
-				dev_info(pTAS2562->dev, "TIAUDIO_CMD_REG_READ: nValue=0x%x, value=0x%x\n",
-					nValue, value);
-			ret = copy_to_user(buf, &value, 1);
+				dev_info(tas_priv->dev, "TIAUDIO_CMD_REG_READ: nValue=0x%x, value=0x%x\n",
+					 value, (u8)value);
+			ret = copy_to_user(dest, &value, 1);
 			if (ret != 0) {
 				/* Failed to copy all the data, exit */
-				dev_err(pTAS2562->dev, "copy to user fail %d\n", ret);
+				dev_err(tas_priv->dev, "copy to user fail %d\n", ret);
 			}
 		} else if (count > 1) {
-			p_kBuf = kzalloc(count, GFP_KERNEL);
-			if (p_kBuf != NULL) {
-				ret = pTAS2562->bulk_read(pTAS2562, pTAS2562->mnCurrentReg, p_kBuf, count);
+			buf = kzalloc(count, GFP_KERNEL);
+			if (buf != NULL) {
+				ret = tas_priv->bulk_read(tas_priv, tas_priv->cur_reg, buf, count);
 				if (ret < 0) {
-					dev_err(pTAS2562->dev, "dev bulk read fail %d\n", ret);
+					dev_err(tas_priv->dev, "dev bulk read fail %d\n", ret);
 				} else {
-					ret = copy_to_user(buf, p_kBuf, count);
+					ret = copy_to_user(dest, buf, count);
 					if (ret != 0) {
 						/* Failed to copy all the data, exit */
-						dev_err(pTAS2562->dev, "copy to user fail %d\n", ret);
+						dev_err(tas_priv->dev, "copy to user fail %d\n", ret);
 					}
 				}
 
-				kfree(p_kBuf);
+				kfree(buf);
 			} else {
-				dev_err(pTAS2562->dev, "read no mem\n");
+				dev_err(tas_priv->dev, "read no mem\n");
 			}
 		}
 	}
 	break;
 	}
-	pTAS2562->mnDBGCmd = 0;
+	tas_priv->debug_cmd = 0;
 
-	mutex_unlock(&pTAS2562->file_lock);
+	mutex_unlock(&tas_priv->file_lock);
 	return count;
 }
 
-static ssize_t tas2562_file_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
+static ssize_t tas2562_file_write(struct file *file, const char *src, size_t count, loff_t *ppos)
 {
-	struct tas2562_priv *pTAS2562 = (struct tas2562_priv *)file->private_data;
+	struct tas2562_priv *tas_priv = (struct tas2562_priv *)file->private_data;
 	int ret = 0;
-	unsigned char *p_kBuf = NULL;
+	unsigned char *buf = NULL;
 	unsigned int reg = 0;
 	unsigned int len = 0;
 
-	mutex_lock(&pTAS2562->file_lock);
+	mutex_lock(&tas_priv->file_lock);
 
-	p_kBuf = kzalloc(count, GFP_KERNEL);
-	if (p_kBuf == NULL) {
-		dev_err(pTAS2562->dev, "write no mem\n");
+	buf = kzalloc(count, GFP_KERNEL);
+	if (buf == NULL) {
+		dev_err(tas_priv->dev, "write no mem\n");
 		goto err;
 	}
 
-	ret = copy_from_user(p_kBuf, buf, count);
+	ret = copy_from_user(buf, src, count);
 	if (ret != 0) {
-		dev_err(pTAS2562->dev, "copy_from_user failed.\n");
+		dev_err(tas_priv->dev, "copy_from_user failed.\n");
 		goto err;
 	}
 
-	pTAS2562->mnDBGCmd = p_kBuf[0];
-	switch (pTAS2562->mnDBGCmd) {
+	tas_priv->debug_cmd = buf[0];
+	switch (tas_priv->debug_cmd) {
 	case TIAUDIO_CMD_REG_WITE:
 	if (count > 5) {
-		reg = ((unsigned int)p_kBuf[1] << 24) +
-			((unsigned int)p_kBuf[2] << 16) +
-			((unsigned int)p_kBuf[3] << 8) +
-			(unsigned int)p_kBuf[4];
+		reg = ((unsigned int)buf[1] << 24) +
+			((unsigned int)buf[2] << 16) +
+			((unsigned int)buf[3] << 8) +
+			(unsigned int)buf[4];
 		len = count - 5;
 		if (len == 1) {
-			ret = pTAS2562->write(pTAS2562, reg, p_kBuf[5]);
+			ret = tas_priv->write(tas_priv, reg, buf[5]);
 			if (g_logEnable)
-				dev_info(pTAS2562->dev,
+				dev_info(tas_priv->dev,
 					"TIAUDIO_CMD_REG_WITE, Reg=0x%x, Val=0x%x\n",
-					reg, p_kBuf[5]);
+					reg, buf[5]);
 		} else {
-			ret = pTAS2562->bulk_write(pTAS2562, reg, &p_kBuf[5], len);
+			ret = tas_priv->bulk_write(tas_priv, reg, &buf[5], len);
 		}
 	} else {
-		dev_err(pTAS2562->dev, "%s, write len fail, count=%d.\n",
+		dev_err(tas_priv->dev, "%s, write len fail, count=%d.\n",
 			__func__, (int)count);
 	}
-	pTAS2562->mnDBGCmd = 0;
+	tas_priv->debug_cmd = 0;
 	break;
 
 	case TIAUDIO_CMD_REG_READ:
 	if (count == 5) {
-		pTAS2562->mnCurrentReg = ((unsigned int)p_kBuf[1] << 24) +
-			((unsigned int)p_kBuf[2] << 16) +
-			((unsigned int)p_kBuf[3] << 8) +
-			(unsigned int)p_kBuf[4];
+		tas_priv->cur_reg = ((unsigned int)buf[1] << 24) +
+			((unsigned int)buf[2] << 16) +
+			((unsigned int)buf[3] << 8) +
+			(unsigned int)buf[4];
 		if (g_logEnable) {
-			dev_info(pTAS2562->dev,
+			dev_info(tas_priv->dev,
 				"TIAUDIO_CMD_REG_READ, whole=0x%x\n",
-				pTAS2562->mnCurrentReg);
+				tas_priv->cur_reg);
 		}
 	} else {
-		dev_err(pTAS2562->dev, "read len fail.\n");
+		dev_err(tas_priv->dev, "read len fail.\n");
 	}
 	break;
 	}
 err:
-	if (p_kBuf != NULL)
-		kfree(p_kBuf);
+	if (buf != NULL)
+		kfree(buf);
 
-	mutex_unlock(&pTAS2562->file_lock);
+	mutex_unlock(&tas_priv->file_lock);
 
 	return count;
 }
@@ -220,22 +218,22 @@ static struct miscdevice tas2562_misc = {
 	.fops = &fops,
 };
 
-int tas2562_register_misc(struct tas2562_priv *pTAS2562)
+int tas2562_register_misc(struct tas2562_priv *tas_priv)
 {
 	int ret = 0;
 
-	g_tas2562 = pTAS2562;
+	g_tas2562 = tas_priv;
 	ret = misc_register(&tas2562_misc);
 	if (ret) {
-		dev_err(pTAS2562->dev, "TAS2562 misc fail: %d\n", ret);
+		dev_err(tas_priv->dev, "TAS2562 misc fail: %d\n", ret);
 	}
 
-	dev_info(pTAS2562->dev, "%s, leave\n", __func__);
+	dev_info(tas_priv->dev, "%s, leave\n", __func__);
 
 	return ret;
 }
 
-int tas2562_deregister_misc(struct tas2562_priv *pTAS2562)
+int tas2562_deregister_misc(struct tas2562_priv *tas_priv)
 {
 	misc_deregister(&tas2562_misc);
 	return 0;

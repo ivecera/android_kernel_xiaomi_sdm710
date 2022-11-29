@@ -31,7 +31,7 @@
 #define	TIAUDIO_CMD_DACVOLUME			10
 #define	TIAUDIO_CMD_SPEAKER				11
 
-int tas2562_register_misc(struct tas2562_priv *pTAS2562);
-int tas2562_deregister_misc(struct tas2562_priv *pTAS2562);
+int tas2562_register_misc(struct tas2562_priv *tas_priv);
+int tas2562_deregister_misc(struct tas2562_priv *tas_priv);
 
 #endif /* _TAS2562_MISC_H */
