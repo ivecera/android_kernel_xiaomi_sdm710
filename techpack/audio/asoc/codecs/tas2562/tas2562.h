@@ -586,22 +586,16 @@ struct hrtimer mtimer;
 #ifdef CONFIG_TAS2562_CODEC
 struct snd_soc_codec *codec;
 #endif
-int mnClkin;
-int mnClkid;
 bool mbPowerUp;
 int mnPowerState;
 int mnCurrentBook;
 int mnCurrentPage;
-int mnLoad;
 int mnASIFormat;
 int mnResetGPIO;
 int mnIRQGPIO;
 int mnIRQ;
 bool mbIRQEnable;
 int mnSamplingRate;
-int mnFrameSize;
-int mnPLL;
-int mnPPG;
 int mnCh_size;
 int mnSlot_width;
 int mnPCMFormat;
