@@ -576,17 +576,6 @@ TAS2562_InterruptConfiguration_PININTConfig10_Assert2msOnLatchedInterrupts \
 #define ERROR_I2C_SUSPEND           -1
 #define ERROR_I2C_FAILED            -2
 
-struct tas2562_register {
-int book;
-int page;
-int reg;
-};
-
-struct tas2562_dai_cfg {
-unsigned int dai_fmt;
-unsigned int tdm_delay;
-};
-
 struct tas2562_priv {
 struct device *dev;
 struct regmap *regmap;
