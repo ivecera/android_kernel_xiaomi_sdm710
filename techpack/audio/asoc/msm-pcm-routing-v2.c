@@ -52,7 +52,7 @@
 #if IS_ENABLED(CONFIG_MACH_XIAOMI_PYXIS_OR_VELA)
 #include "dsp/smart_amp.h"
 
-#include "tas2562-calib.h"
+#include "codecs/tas2562/tas2562-calib.h"
 #endif
 #ifndef CONFIG_DOLBY_DAP
 #undef DOLBY_ADM_COPP_TOPOLOGY_ID
