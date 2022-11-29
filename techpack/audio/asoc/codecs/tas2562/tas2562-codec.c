@@ -43,6 +43,7 @@
 #include <sound/tlv.h>
 
 #include "tas2562.h"
+#include "tas2562-calib.h"
 
 #define TAS2562_MDELAY 0xFFFFFFFE
 #define TAS2562_MSLEEP 0xFFFFFFFD
@@ -856,6 +857,9 @@ static int tas2562_codec_probe(struct snd_soc_codec *codec)
 	tas2562_load_init(tas_priv);
 	tas2562_iv_enable(tas_priv, 1);
 	tas_priv->codec = codec;
+
+	tas2562_smartamp_add_controls(tas_priv);
+	tas_calib_init();
 	dev_err(tas_priv->dev, "%s\n", __func__);
 
 	return 0;
@@ -863,6 +867,8 @@ static int tas2562_codec_probe(struct snd_soc_codec *codec)
 
 static int tas2562_codec_remove(struct snd_soc_codec *codec)
 {
+	tas_calib_exit();
+
 	return 0;
 }
 
