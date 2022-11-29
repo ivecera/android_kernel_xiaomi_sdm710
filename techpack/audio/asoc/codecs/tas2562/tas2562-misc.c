@@ -88,7 +88,7 @@ static ssize_t tas2562_file_read(struct file *file, char *dest, size_t count, lo
 				"TIAUDIO_CMD_REG_READ: current_reg = 0x%x, count=%d\n",
 				tas_priv->cur_reg, (int)count);
 		if (count == 1) {
-			ret = tas_priv->read(tas_priv, tas_priv->cur_reg, &value);
+			ret = tas2562_read(tas_priv, tas_priv->cur_reg, &value);
 			if (ret < 0) {
 				dev_err(tas_priv->dev, "dev read fail %d\n", ret);
 				break;
@@ -105,7 +105,7 @@ static ssize_t tas2562_file_read(struct file *file, char *dest, size_t count, lo
 		} else if (count > 1) {
 			buf = kzalloc(count, GFP_KERNEL);
 			if (buf != NULL) {
-				ret = tas_priv->bulk_read(tas_priv, tas_priv->cur_reg, buf, count);
+				ret = tas2562_bulk_read(tas_priv, tas_priv->cur_reg, buf, count);
 				if (ret < 0) {
 					dev_err(tas_priv->dev, "dev bulk read fail %d\n", ret);
 				} else {
@@ -162,13 +162,13 @@ static ssize_t tas2562_file_write(struct file *file, const char *src, size_t cou
 			(unsigned int)buf[4];
 		len = count - 5;
 		if (len == 1) {
-			ret = tas_priv->write(tas_priv, reg, buf[5]);
+			ret = tas2562_write(tas_priv, reg, buf[5]);
 			if (g_logEnable)
 				dev_info(tas_priv->dev,
 					"TIAUDIO_CMD_REG_WITE, Reg=0x%x, Val=0x%x\n",
 					reg, buf[5]);
 		} else {
-			ret = tas_priv->bulk_write(tas_priv, reg, &buf[5], len);
+			ret = tas2562_bulk_write(tas_priv, reg, &buf[5], len);
 		}
 	} else {
 		dev_err(tas_priv->dev, "%s, write len fail, count=%d.\n",
