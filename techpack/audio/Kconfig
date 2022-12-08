@@ -171,12 +171,6 @@ config TAS2557_MISC
 config TAS2557_REGMAP
 	tristate "TAS2557_REGMAP"
 
-config TAS2562_CODEC
-	tristate "TAS2562_CODEC"
-
-config TAS2562_REGMAP
-	tristate "TAS2562_REGMAP"
-
 config WCD9XXX_CODEC_CORE
 	tristate "WCD9XXX_CODEC_CORE"
 

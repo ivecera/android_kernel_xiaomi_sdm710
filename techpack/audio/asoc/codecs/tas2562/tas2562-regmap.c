@@ -14,8 +14,6 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  */
-#ifdef CONFIG_TAS2562_REGMAP
-
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/err.h>
@@ -403,9 +401,7 @@ static void irq_work_routine(struct work_struct *work)
 	int irq_reg;
 
 	dev_info(tas_priv->dev, "%s\n", __func__);
-#ifdef CONFIG_TAS2562_CODEC
 	mutex_lock(&tas_priv->codec_lock);
-#endif
 	tas2562_enable_irq(tas_priv, false);
 	result = gpio_get_value(tas_priv->irq_gpio);
 	dev_info(tas_priv->dev, "%s, irq GPIO state: %d\n", __func__, result);
@@ -593,9 +589,7 @@ reload:
 end:
 	tas2562_enable_irq(tas_priv, true);
 
-#ifdef CONFIG_TAS2562_CODEC
 	mutex_unlock(&tas_priv->codec_lock);
-#endif
 }
 
 static void init_work_routine(struct work_struct *work)
@@ -605,9 +599,7 @@ static void init_work_routine(struct work_struct *work)
 	int result = 0;
 	//int irq_reg;
 	//dev_info(tas_priv->dev, "%s\n", __func__);
-#ifdef CONFIG_TAS2562_CODEC
 	mutex_lock(&tas_priv->codec_lock);
-#endif
 
 	tas2562_update_bits(tas_priv, TAS2562_PowerControl,
 		TAS2562_PowerControl_OperationalMode10_Mask,
@@ -619,9 +611,7 @@ static void init_work_routine(struct work_struct *work)
 	result = gpio_get_value(tas_priv->irq_gpio);
 	//dev_info(tas_priv->dev, "%s, irq GPIO state: %d\n", __func__, result);
 
-#ifdef CONFIG_TAS2562_CODEC
 	mutex_unlock(&tas_priv->codec_lock);
-#endif
 }
 
 
@@ -772,7 +762,6 @@ static int tas2562_i2c_probe(struct i2c_client *client,
 	}
 	INIT_DELAYED_WORK(&tas_priv->init_work, init_work_routine);
 
-#ifdef CONFIG_TAS2562_CODEC
 	mutex_init(&tas_priv->codec_lock);
 	result = tas2562_register_codec(tas_priv);
 	if (result < 0) {
@@ -780,7 +769,6 @@ static int tas2562_i2c_probe(struct i2c_client *client,
 			"register codec failed, %d\n", result);
 		goto err;
 	}
-#endif
 err:
 	return result;
 }
@@ -791,10 +779,8 @@ static int tas2562_i2c_remove(struct i2c_client *client)
 
 	dev_info(tas_priv->dev, "%s\n", __func__);
 
-#ifdef CONFIG_TAS2562_CODEC
 	tas2562_deregister_codec(tas_priv);
 	mutex_destroy(&tas_priv->codec_lock);
-#endif
 
 	if (gpio_is_valid(tas_priv->reset_gpio))
 		gpio_free(tas_priv->reset_gpio);
@@ -838,4 +824,3 @@ module_i2c_driver(tas2562_i2c_driver);
 MODULE_AUTHOR("Texas Instruments Inc.");
 MODULE_DESCRIPTION("TAS2562 I2C Smart Amplifier driver");
 MODULE_LICENSE("GPL v2");
-#endif

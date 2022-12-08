@@ -583,9 +583,7 @@ struct tas2562_priv {
 	struct delayed_work irq_work;
 	struct delayed_work init_work;
 	struct hrtimer mtimer;
-#ifdef CONFIG_TAS2562_CODEC
 	struct snd_soc_codec *codec;
-#endif
 	bool power_up;
 	int power_state;
 	int cur_book;
@@ -605,9 +603,7 @@ struct tas2562_priv {
 	bool runtime_suspended;
 
 	unsigned int err_code;
-#ifdef CONFIG_TAS2562_CODEC
 	struct mutex codec_lock;
-#endif
 };
 
 int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
