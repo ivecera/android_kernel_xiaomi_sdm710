@@ -114,9 +114,6 @@ config SND_SOC_SDM845
 config SND_SOC_TAS2557
 	tristate "SND_SOC_TAS2557"
 
-config SND_SOC_TAS2562
-	tristate "SND_SOC_TAS2562"
-
 config SND_SOC_WCD9335
 	tristate "SND_SOC_WCD9335"
 
