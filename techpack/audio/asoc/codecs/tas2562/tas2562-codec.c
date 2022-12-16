@@ -805,22 +805,6 @@ static int tas2562_load_init(struct tas2562_priv *tas_priv)
 {
 	int ret;
 
-#ifdef TAS2558_CODEC
-/* Max voltage to 9V */
-	ret = tas2562_update_bits(tas_priv, TAS2562_BoostConfiguration2,
-					TAS2562_BoostConfiguration2_BoostMaxVoltage_Mask,
-					0x7);
-	if(ret < 0)
-		return ret;
-
-        ret = tas2562_update_bits(tas_priv, TAS2562_PlaybackConfigurationReg0,
-                                        TAS2562_PlaybackConfigurationReg0_AmplifierLevel51_Mask,
-                                        0xd << 1);
-        if(ret < 0)
-                return ret;
-
-#endif
-
 	ret = tas2562_write(tas_priv, TAS2562_MiscConfigurationReg0, 0xcf);
 	if(ret < 0)
 		return ret;
