@@ -59,20 +59,20 @@ static int tas2562_mute_ctrl_put(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol);
 static int tas2562_load_init(struct tas2562_priv *tas_priv);
 static unsigned int p_tas2562_classH_D_data[] = {
-		/* reg address			size	values */
-	TAS2562_ClassHHeadroom, 0x4, 0x09, 0x99, 0x99, 0x9a,
-	TAS2562_ClassHHysteresis, 0x4, 0x0, 0x0, 0x0, 0x0,
-	TAS2562_ClassHMtct, 0x4, 0xb, 0x0, 0x0, 0x0,
-	TAS2562_VBatFilter, 0x1, 0x38,
-	TAS2562_ClassHReleaseTimer, 0x1, 0x3c,
-	TAS2562_BoostSlope, 0x1, 0x78,
-	TAS2562_TestPageConfiguration, 0x1, 0xd,
-	TAS2562_ClassDConfiguration3, 0x1, 0x8e,
-	TAS2562_ClassDConfiguration2, 0x1, 0x49,
-	TAS2562_ClassDConfiguration4, 0x1, 0x21,
-	TAS2562_ClassDConfiguration1, 0x1, 0x80,
-	TAS2562_EfficiencyConfiguration, 0x1, 0xc1,
-	0xFFFFFFFF, 0xFFFFFFFF
+	/* reg address		size	values */
+	TAS2562_CLS_H_HDRM_CFG0,0x04,	0x09, 0x99, 0x99, 0x9A,
+	TAS2562_CLS_H_HYST_CFG0,0x04,	0x00, 0x00, 0x00, 0x00,
+	TAS2562_CLS_H_MTCT_CFG0,0x04,	0x0B, 0x00, 0x00, 0x00,
+	TAS2562_VBAT_FLT,	0x01,	0x38,
+	TAS2562_CLS_H_RTMR,	0x01,	0x3C,
+	TAS2562_BOOST_CFG3,	0x01,	0x78,
+	TAS2562_TEST_PG_CFG,	0x01,	0x0D,
+	TAS2562_CLS_D_CFG3,	0x01,	0x8E,
+	TAS2562_CLS_D_CFG2,	0x01,	0x49,
+	TAS2562_CLS_D_CFG4,	0x01,	0x21,
+	TAS2562_CLS_D_CFG1,	0x01,	0x80,
+	TAS2562_EFFC_CFG,	0x01,	0xC1,
+	UINT_MAX, UINT_MAX,
 };
 
 
@@ -104,18 +104,14 @@ static int tas2562_iv_enable(struct tas2562_priv *tas_priv, int enable)
 
 	if (enable) {
 		pr_debug("%s: tas2562iv_enable \n", __func__);
-		result = tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-		    TAS2562_PowerControl_ISNSPower_Mask |
-		    TAS2562_PowerControl_VSNSPower_Mask,
-		    TAS2562_PowerControl_VSNSPower_Active |
-		    TAS2562_PowerControl_ISNSPower_Active);
+		result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
+					     TAS2562_ISNS_PD | TAS2562_VSNS_PD,
+					     0);
 	} else {
 		pr_debug("%s: tas2562iv_disable \n", __func__);
-		result = tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-			TAS2562_PowerControl_ISNSPower_Mask |
-			TAS2562_PowerControl_VSNSPower_Mask,
-			TAS2562_PowerControl_VSNSPower_PoweredDown |
-			TAS2562_PowerControl_ISNSPower_PoweredDown);
+		result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
+					     TAS2562_ISNS_PD | TAS2562_VSNS_PD,
+					     TAS2562_ISNS_PD | TAS2562_VSNS_PD);
 	}
 	tas2562iv_enable = enable;
 
@@ -257,12 +253,9 @@ static int tas2562_codec_resume(struct snd_soc_codec *codec)
 }
 
 static const struct snd_kcontrol_new tas2562_asi_controls[] = {
-	SOC_DAPM_SINGLE("Left", TAS2562_TDMConfigurationReg2,
-		4, 1, 0),
-	SOC_DAPM_SINGLE("Right", TAS2562_TDMConfigurationReg2,
-		4, 2, 0),
-	SOC_DAPM_SINGLE("LeftRightDiv2", TAS2562_TDMConfigurationReg2,
-		4, 3, 0),
+	SOC_DAPM_SINGLE("Left", TAS2562_TDM_CFG2, 4, 1, 0),
+	SOC_DAPM_SINGLE("Right", TAS2562_TDM_CFG2, 4, 2, 0),
+	SOC_DAPM_SINGLE("LeftRightDiv2", TAS2562_TDM_CFG2, 4, 3, 0),
 };
 
 static int tas2562_set_power_state(struct tas2562_priv *tas_priv, int state)
@@ -292,13 +285,13 @@ static int tas2562_set_power_state(struct tas2562_priv *tas_priv, int state)
 
 //Clear latched IRQ before power on
 
-		result = tas2562_update_bits(tas_priv, TAS2562_InterruptConfiguration,
-					TAS2562_InterruptConfiguration_LTCHINTClear_Mask,
-					TAS2562_InterruptConfiguration_LTCHINTClear);
+		result = tas2562_update_bits(tas_priv, TAS2562_INT_CLK,
+					     TAS2562_INT_CLR_LTCH,
+					     TAS2562_INT_CLR_LTCH);
 		if (result < 0)
 			goto activer_end;
 
-		result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg0, &irq_reg);
+		result = tas2562_read(tas_priv, TAS2562_INT_LTCH0, &irq_reg);
 		if (result < 0)
 			goto activer_end;
 		dev_info(tas_priv->dev, "IRQ reg is: %s %d, %d\n", __func__, irq_reg, __LINE__);
@@ -311,23 +304,21 @@ activer_end:
 		break;
 
 	case TAS2562_POWER_MUTE:
-		result = tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-			TAS2562_PowerControl_OperationalMode10_Mask |
-			TAS2562_PowerControl_ISNSPower_Mask |
-			TAS2562_PowerControl_VSNSPower_Mask,
-			TAS2562_PowerControl_OperationalMode10_Mute |
-			TAS2562_PowerControl_VSNSPower_Active |
-			TAS2562_PowerControl_ISNSPower_Active);
-			tas_priv->power_up = true;
-			tas_priv->power_state = TAS2562_POWER_MUTE;
+		result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
+					     TAS2562_ISNS_PD |
+					     TAS2562_VSNS_PD |
+					     TAS2562_MODE_MASK,
+					     TAS2562_MODE_MUTE);
+		tas_priv->power_up = true;
+		tas_priv->power_state = TAS2562_POWER_MUTE;
 		break;
 
 	case TAS2562_POWER_SHUTDOWN:
-		result = tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-			TAS2562_PowerControl_OperationalMode10_Mask,
-			TAS2562_PowerControl_OperationalMode10_Shutdown);
-			tas_priv->power_up = false;
-			tas_priv->power_state = TAS2562_POWER_SHUTDOWN;
+		result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
+					     TAS2562_MODE_MASK,
+					     TAS2562_MODE_SHUTDOWN);
+		tas_priv->power_up = false;
+		tas_priv->power_state = TAS2562_POWER_SHUTDOWN;
 		msleep(20);
 
 		break;
@@ -344,12 +335,13 @@ activer_end:
 
 static const struct snd_soc_dapm_widget tas2562_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_IN("ASI1", "ASI1 Playback", 0, SND_SOC_NOPM, 0, 0),
-	SND_SOC_DAPM_AIF_OUT("Voltage Sense", "ASI1 Capture",  1, TAS2562_PowerControl, 2, 1),
-	SND_SOC_DAPM_AIF_OUT("Current Sense", "ASI1 Capture",  0, TAS2562_PowerControl, 3, 1),
-	SND_SOC_DAPM_MIXER("ASI1 Sel",
-		TAS2562_TDMConfigurationReg2, 4, 0,
-		&tas2562_asi_controls[0],
-		ARRAY_SIZE(tas2562_asi_controls)),
+	SND_SOC_DAPM_AIF_OUT("Voltage Sense", "ASI1 Capture", 1,
+			     TAS2562_PWR_CTL, 2, 1),
+	SND_SOC_DAPM_AIF_OUT("Current Sense", "ASI1 Capture", 0,
+			     TAS2562_PWR_CTL, 3, 1),
+	SND_SOC_DAPM_MIXER("ASI1 Sel", TAS2562_TDM_CFG2, 4, 0,
+			   &tas2562_asi_controls[0],
+			   ARRAY_SIZE(tas2562_asi_controls)),
 	SND_SOC_DAPM_DAC("DAC", NULL, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_OUTPUT("OUT"),
 	SND_SOC_DAPM_SIGGEN("VMON"),
@@ -390,17 +382,23 @@ static int tas2562_slot_config(struct snd_soc_codec *codec, struct tas2562_priv 
 {
 	int ret = 0;
 	if(tas_priv->slot_width == 16)
-		ret = tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg5, 0xff, 0x42);
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG5,
+					  TAS2562_VSNS_TX_EN |
+					  TAS2562_VSNS_SLOT_MASK,
+					  TAS2562_VSNS_TX_EN |
+					  TAS2562_VSNS_SLOT(2));
 	else
-		ret = tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg5, 0xff, 0x44);
-	if(ret < 0)
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG5,
+					  TAS2562_VSNS_TX_EN |
+					  TAS2562_VSNS_SLOT_MASK,
+					  TAS2562_VSNS_TX_EN |
+					  TAS2562_VSNS_SLOT(4));
+	if (ret < 0)
 		goto end;
 
-	tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg6, 0xff, 0x40);
-
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG6,
+				  TAS2562_ISNS_TX_EN | TAS2562_ISNS_SLOT_MASK,
+				  TAS2562_ISNS_TX_EN | TAS2562_ISNS_SLOT(0));
 end:
 	return ret;
 }
@@ -412,30 +410,23 @@ static int tas2562_set_slot(struct snd_soc_codec *codec, int slot_width)
 
 	switch (slot_width) {
 	case 16:
-	ret = tas2562_update_bits(tas_priv,
-		TAS2562_TDMConfigurationReg2,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_Mask,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_16Bits);
-	break;
-
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_SLEN_MASK,
+					  TAS2562_RX_SLEN_16);
+		break;
 	case 24:
-	ret = tas2562_update_bits(tas_priv,
-		TAS2562_TDMConfigurationReg2,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_Mask,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_24Bits);
-	break;
-
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_SLEN_MASK,
+					  TAS2562_RX_SLEN_24);
+		break;
 	case 32:
-	ret = tas2562_update_bits(tas_priv,
-		TAS2562_TDMConfigurationReg2,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_Mask,
-		TAS2562_TDMConfigurationReg2_RXSLEN10_32Bits);
-	break;
-
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_SLEN_MASK,
+					  TAS2562_RX_SLEN_32);
+		break;
 	case 0:
-	/* Do not change slot width */
-	break;
-
+		/* Do not change slot width */
+		break;
 	default:
 		dev_err(tas_priv->dev, "slot width not supported");
 		ret = -EINVAL;
@@ -455,28 +446,25 @@ static int tas2562_set_bitwidth(struct tas2562_priv *tas_priv, int bitwidth)
 
 	switch (bitwidth) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-		ret = tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg2,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_Mask,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_16Bits);
-			tas_priv->channel_width = 16;
-				slot_width_tmp = 16;
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_WLEN_MASK,
+					  TAS2562_RX_WLEN_16);
+		tas_priv->channel_width = 16;
+		slot_width_tmp = 16;
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
-		ret = tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg2,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_Mask,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_24Bits);
-			tas_priv->channel_width = 24;
-				slot_width_tmp = 32;
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_WLEN_MASK,
+					  TAS2562_RX_WLEN_24);
+		tas_priv->channel_width = 24;
+		slot_width_tmp = 32;
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-		ret = tas2562_update_bits(tas_priv,
-			TAS2562_TDMConfigurationReg2,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_Mask,
-			TAS2562_TDMConfigurationReg2_RXWLEN32_32Bits);
-			tas_priv->channel_width = 32;
-				slot_width_tmp = 32;
+		ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG2,
+					  TAS2562_RX_WLEN_MASK,
+					  TAS2562_RX_WLEN_32);
+		tas_priv->channel_width = 32;
+		slot_width_tmp = 32;
 		break;
 
 	default:
@@ -498,33 +486,27 @@ end:
 
 static int tas2562_set_samplerate(struct tas2562_priv *tas_priv, int samplerate)
 {
-	unsigned int samp_rate, ramp_rate;
+	unsigned int value;
 	int ret;
 
 	switch (samplerate) {
 	case 48000:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz;
+		value = TAS2562_SAMP_RATE_48;
 		break;
 	case 44100:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz;
+		value = TAS2562_SAMP_RATE_44_1;
 		break;
 	case 96000:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz;
+		value = TAS2562_SAMP_RATE_96;
 		break;
 	case 88200:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz;
+		value = TAS2562_SAMP_RATE_88_2;
 		break;
 	case 192000:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz;
+		value = TAS2562_SAMP_RATE_192;
 		break;
 	case 176400:
-		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
-		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz;
+		value = TAS2562_SAMP_RATE_176_4;
 		break;
 	default:
 		dev_err(tas_priv->dev, "%s, unsupported sample rate, %d\n",
@@ -533,10 +515,8 @@ static int tas2562_set_samplerate(struct tas2562_priv *tas_priv, int samplerate)
 		return -EINVAL;
 	}
 
-	ret = tas2562_update_bits(tas_priv, TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask |
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				ramp_rate | samp_rate);
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG0,
+				  TAS2562_SAMP_RATE_MASK, value);
 	if (ret < 0)
 		return ret;
 
@@ -631,21 +611,20 @@ static int tas2562_set_fmt(struct tas2562_priv *tas_priv, unsigned int fmt)
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
 		dev_info(tas_priv->dev, "INV format: NBNF\n");
-		asi_cfg_1 |= TAS2562_TDMConfigurationReg1_RXEDGE_Rising;
+		asi_cfg_1 |= TAS2562_RX_EDGE_RISING;
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
 		dev_info(tas_priv->dev, "INV format: IBNF\n");
-		asi_cfg_1 |= TAS2562_TDMConfigurationReg1_RXEDGE_Falling;
+		asi_cfg_1 |= TAS2562_RX_EDGE_FALLING;
 		break;
 	default:
 		dev_err(tas_priv->dev, "ASI format Inverse is not found\n");
 		ret = -EINVAL;
 	}
 
-	ret = tas2562_update_bits(tas_priv, TAS2562_TDMConfigurationReg1,
-		TAS2562_TDMConfigurationReg1_RXEDGE_Mask,
-		asi_cfg_1);
-	if(ret < 0)
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG1,
+				  TAS2562_RX_EDGE_MASK, asi_cfg_1);
+	if (ret < 0)
 		goto end;
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
@@ -665,13 +644,19 @@ static int tas2562_set_fmt(struct tas2562_priv *tas_priv, unsigned int fmt)
 		break;
 	}
 
-	ret = tas2562_update_bits(tas_priv, TAS2562_TDMConfigurationReg1,
-		TAS2562_TDMConfigurationReg1_RXOFFSET51_Mask,
-		(tdm_rx_start_slot << TAS2562_TDMConfigurationReg1_RXOFFSET51_Shift));
-	if(ret < 0)
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG1,
+				  TAS2562_RX_OFFSET_MASK,
+				  TAS2562_RX_OFFSET(tdm_rx_start_slot));
+	if (ret < 0)
 		goto end;
-	ret = tas2562_write(tas_priv, TAS2562_TDMConfigurationReg4, 0x01);
-	if(ret < 0)
+
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG4,
+				  TAS2562_TX_EDGE_MASK |
+				  TAS2562_TX_OFFSET_MASK |
+				  TAS2562_TX_FILL_MASK,
+				  TAS2562_TX_EDGE_FALLING |
+				  TAS2562_TX_OFFSET(0));
+	if (ret < 0)
 		goto end;
 
 	tas_priv->asi_format = fmt;
@@ -756,15 +741,24 @@ static int tas2562_load_init(struct tas2562_priv *tas_priv)
 {
 	int ret;
 
-	ret = tas2562_write(tas_priv, TAS2562_MiscConfigurationReg0, 0xcf);
-	if(ret < 0)
+	ret = tas2562_update_bits(tas_priv, TAS2562_MISC_CFG1, TAS2562_IRQZ_PU,
+				  TAS2562_IRQZ_PU);
+	if (ret < 0)
 		return ret;
-	ret = tas2562_write(tas_priv, TAS2562_TDMConfigurationReg4, 0x01);
-	if(ret < 0)
+
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDM_CFG4,
+				  TAS2562_TX_EDGE_MASK |
+				  TAS2562_TX_OFFSET_MASK |
+				  TAS2562_TX_FILL_MASK,
+				  TAS2562_TX_EDGE_FALLING |
+				  TAS2562_TX_OFFSET(0));
+	if (ret < 0)
 		return ret;
-	ret = tas2562_write(tas_priv, TAS2562_ClockConfiguration, 0x0c);
-	if(ret < 0)
+
+	ret = tas2562_write(tas_priv, TAS2562_CLK_CFG, 0x0c);
+	if (ret < 0)
 		return ret;
+
 	ret = tas2562_i2c_load_data(tas_priv, p_tas2562_classH_D_data);
 
 	return ret;
@@ -802,11 +796,10 @@ static int tas2562_codec_remove(struct snd_soc_codec *codec)
 static DECLARE_TLV_DB_SCALE(tas2562_digital_tlv, 1100, 50, 0);
 
 static const struct snd_kcontrol_new tas2562_snd_controls[] = {
-	SOC_SINGLE_TLV("Amp Output Level", TAS2562_PlaybackConfigurationReg0,
-		0, 0x16, 0,
-		tas2562_digital_tlv),
+	SOC_SINGLE_TLV("Amp Output Level", TAS2562_PB_CFG1, 0, 0x16, 0,
+		       tas2562_digital_tlv),
 	SOC_SINGLE_EXT("SmartPA Mute", SND_SOC_NOPM, 0, 0x0001, 0,
-			tas2562_mute_ctrl_get, tas2562_mute_ctrl_put),
+		       tas2562_mute_ctrl_get, tas2562_mute_ctrl_put),
 };
 
 static struct snd_soc_codec_driver soc_codec_driver_tas2562 = {
@@ -850,8 +843,7 @@ void tas2562_load_config(struct tas2562_priv *tas_priv)
 
 	tas2562_hw_reset(tas_priv);
 	msleep(2);
-	tas2562_write(tas_priv, TAS2562_SoftwareReset,
-			TAS2562_SoftwareReset_SoftwareReset_Reset);
+	tas2562_write(tas_priv, TAS2562_SW_RESET, TAS2562_RESET);
 	msleep(3);
 
 	ret = tas2562_slot_config(tas_priv->codec, tas_priv, 1);

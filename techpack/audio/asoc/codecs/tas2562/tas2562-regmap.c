@@ -163,7 +163,7 @@ static int tas2562_change_book_page(struct tas2562_priv *tas_priv,
 		goto end;
 
 	if (tas_priv->cur_book != book) {
-		result = tas2562_regmap_write(tas_priv, TAS2562_BOOKCTL_PAGE, 0);
+		result = tas2562_regmap_write(tas_priv, TAS2562_PAGE_CTRL, 0);
 		if (result < 0) {
 			dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 				__func__, __LINE__, result);
@@ -171,7 +171,7 @@ static int tas2562_change_book_page(struct tas2562_priv *tas_priv,
 			goto end;
 		}
 		tas_priv->cur_page = 0;
-		result = tas2562_regmap_write(tas_priv, TAS2562_BOOKCTL_REG, book);
+		result = tas2562_regmap_write(tas_priv, TAS2562_BOOK_CTRL, book);
 		if (result < 0) {
 			dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 				__func__, __LINE__, result);
@@ -182,7 +182,7 @@ static int tas2562_change_book_page(struct tas2562_priv *tas_priv,
 	}
 
 	if (tas_priv->cur_page != page) {
-		result = tas2562_regmap_write(tas_priv, TAS2562_BOOKCTL_PAGE, page);
+		result = tas2562_regmap_write(tas_priv, TAS2562_BOOK_CTRL, page);
 		if (result < 0) {
 			dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 				__func__, __LINE__, result);
@@ -420,34 +420,36 @@ static void irq_work_routine(struct work_struct *work)
 	if(tas_priv->err_code & ERROR_DEVA_I2C_COMM)
 		goto reload;
 
-	result = tas2562_write(tas_priv, TAS2562_InterruptMaskReg0,
-				TAS2562_InterruptMaskReg0_Disable);
+	result = tas2562_update_bits(tas_priv, TAS2562_INT_MASK0,
+				     TAS2562_INT_ALL,
+				     TAS2562_INT_ALL);
 	if (result < 0)
 		goto reload;
-	result = tas2562_write(tas_priv, TAS2562_InterruptMaskReg1,
-				TAS2562_InterruptMaskReg1_Disable);
+	result = tas2562_update_bits(tas_priv, TAS2562_INT_MASK1,
+				     TAS2562_INT_ALL,
+				     TAS2562_INT_ALL);
 	if (result < 0)
 		goto reload;
 
-	tas2562_read(tas_priv, TAS2562_TDMConfigurationReg4, &irq_reg);
-	if(irq_reg != 0x01) {
-		dev_info(tas_priv->dev, "TX reg is: %s %d, %d\n", __func__, irq_reg, __LINE__);
-	}
-	result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg0, &intr_status[0]);
+	tas2562_read(tas_priv, TAS2562_TDM_CFG4, &irq_reg);
+	if (irq_reg != TAS2562_TX_EDGE_FALLING)
+		dev_info(tas_priv->dev, "TX reg is: %d\n", irq_reg);
+
+	result = tas2562_read(tas_priv, TAS2562_INT_LTCH0, &intr_status[0]);
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg1, &intr_status[1]);
+		result = tas2562_read(tas_priv, TAS2562_INT_LTCH1, &intr_status[1]);
 	else
 		goto reload;
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg2, &intr_status[2]);
+		result = tas2562_read(tas_priv, TAS2562_INT_LTCH2, &intr_status[2]);
 	else
 		goto reload;
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg3, &intr_status[3]);
+		result = tas2562_read(tas_priv, TAS2562_INT_LTCH3, &intr_status[3]);
 	else
 		goto reload;
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LatchedInterruptReg4, &intr_status[4]);
+		result = tas2562_read(tas_priv, TAS2562_INT_LTCH4, &intr_status[4]);
 	else
 		goto reload;
 
@@ -470,11 +472,11 @@ static void irq_work_routine(struct work_struct *work)
 			intr_status[2], intr_status[3], intr_status[4]);
 
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LimiterConfigurationReg0, &intr_status[2]);
+		result = tas2562_read(tas_priv, TAS2562_LIM_CFG0, &intr_status[2]);
 	else
 		goto reload;
 	if (result >= 0)
-		result = tas2562_read(tas_priv, TAS2562_LimiterConfigurationReg0, &intr_status[3]);
+		result = tas2562_read(tas_priv, TAS2562_LIM_CFG0, &intr_status[3]);
 	else
 		goto reload;
 	dev_dbg(tas_priv->dev, " Thermal foldback : 0x%x, limiter status: 0x%x\n",
@@ -484,37 +486,37 @@ static void irq_work_routine(struct work_struct *work)
 			(gpio_get_value(tas_priv->irq_gpio) == 0)) {
 		/* in case of any IRQ, INT_OC, INT_OT, INT_OVLT, INT_UVLT, INT_BO */
 
-		if (intr_status[0] & TAS2562_LatchedInterruptReg0_TDMClockErrorSticky_Mask) {
+		if (intr_status[0] & TAS2562_INTS_TCE) {
 			tas_priv->err_code |= ERROR_DTMCLK_ERROR;
 			dev_err(tas_priv->dev, "TDM clk error!\n");
 		} else
 			tas_priv->err_code &= ~ERROR_DTMCLK_ERROR;
 
-		if (intr_status[0] & TAS2562_LatchedInterruptReg0_OCEFlagSticky_Interrupt) {
+		if (intr_status[0] & TAS2562_INTS_OCE) {
 			tas_priv->err_code |= ERROR_OVER_CURRENT;
 			dev_err(tas_priv->dev, "SPK over current!\n");
 		} else
 			tas_priv->err_code &= ~ERROR_OVER_CURRENT;
 
-		if (intr_status[0] & TAS2562_LatchedInterruptReg0_OTEFlagSticky_Interrupt) {
+		if (intr_status[0] & TAS2562_INTS_OTE) {
 			tas_priv->err_code |= ERROR_DIE_OVERTEMP;
 			dev_err(tas_priv->dev, "die over temperature!\n");
 		} else
 			tas_priv->err_code &= ~ERROR_DIE_OVERTEMP;
 
-		if (intr_status[1] & TAS2562_LatchedInterruptReg1_VBATOVLOSticky_Interrupt) {
+		if (intr_status[1] & TAS2562_INTS_SPK_OVOL) {
 			tas_priv->err_code |= ERROR_OVER_VOLTAGE;
 			dev_err(tas_priv->dev, "SPK over voltage!\n");
 		} else
 			tas_priv->err_code &= ~ERROR_UNDER_VOLTAGE;
 
-		if (intr_status[1] & TAS2562_LatchedInterruptReg1_VBATUVLOSticky_Interrupt) {
+		if (intr_status[1] & TAS2562_INTS_SPK_UVOL) {
 			tas_priv->err_code |= ERROR_UNDER_VOLTAGE;
 			dev_err(tas_priv->dev, "SPK under voltage!\n");
 		} else
 			tas_priv->err_code &= ~ERROR_UNDER_VOLTAGE;
 
-		if (intr_status[1] & TAS2562_LatchedInterruptReg1_BrownOutFlagSticky_Interrupt) {
+		if (intr_status[1] & TAS2562_INTS_BOF) {
 			tas_priv->err_code |= ERROR_BROWNOUT;
 			dev_err(tas_priv->dev, "brownout!\n");
 		} else
@@ -526,20 +528,20 @@ static void irq_work_routine(struct work_struct *work)
 		counter = 2;
 
 		while (counter > 0) {
-			result = tas2562_read(tas_priv, TAS2562_PowerControl, &intr_status[0]);
+			result = tas2562_read(tas_priv, TAS2562_PWR_CTL, &intr_status[0]);
 			if (result < 0)
 				goto reload;
 
-			if ((intr_status[0] & TAS2562_PowerControl_OperationalMode10_Mask)
-				!= TAS2562_PowerControl_OperationalMode10_Shutdown)
+			if ((intr_status[0] & TAS2562_MODE_MASK) !=
+			    TAS2562_MODE_SHUTDOWN)
 				break;
 
-			tas2562_read(tas_priv, TAS2562_LatchedInterruptReg0, &irq_reg);
+			tas2562_read(tas_priv, TAS2562_INT_LTCH0, &irq_reg);
 			dev_info(tas_priv->dev, "IRQ reg is: %s %d, %d\n", __func__, irq_reg, __LINE__);
 
-			result = tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-				TAS2562_PowerControl_OperationalMode10_Mask,
-				TAS2562_PowerControl_OperationalMode10_Active);
+			result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
+						     TAS2562_MODE_MASK,
+						     TAS2562_MODE_ACTIVE);
 			if (result < 0)
 				goto reload;
 
@@ -548,7 +550,7 @@ static void irq_work_routine(struct work_struct *work)
 			if (result < 0)
 				goto reload;
 
-			tas2562_read(tas_priv, TAS2562_LatchedInterruptReg0, &irq_reg);
+			tas2562_read(tas_priv, TAS2562_INT_LTCH0, &irq_reg);
 			dev_info(tas_priv->dev, "IRQ reg is: %s, %d, %d\n", __func__, irq_reg, __LINE__);
 
 			counter--;
@@ -560,11 +562,11 @@ static void irq_work_routine(struct work_struct *work)
 			}
 		}
 
-		if ((intr_status[0] & TAS2562_PowerControl_OperationalMode10_Mask)
-			== TAS2562_PowerControl_OperationalMode10_Shutdown) {
+		if ((intr_status[0] & TAS2562_MODE_MASK) ==
+		    TAS2562_MODE_SHUTDOWN) {
 			dev_err(tas_priv->dev, "%s, Critical ERROR REG[0x%x] = 0x%x\n",
 				__func__,
-				TAS2562_PowerControl,
+				TAS2562_PWR_CTL,
 				intr_status[0]);
 			tas_priv->err_code |= ERROR_CLASSD_PWR;
 			goto reload;
@@ -572,11 +574,20 @@ static void irq_work_routine(struct work_struct *work)
 		tas_priv->err_code &= ~ERROR_CLASSD_PWR;
 	}
 
-	result = tas2562_write(tas_priv, TAS2562_InterruptMaskReg0, 0xf8);
+	result = tas2562_update_bits(tas_priv, TAS2562_INT_MASK0,
+				     TAS2562_INT_OTE |
+				     TAS2562_INT_OCE |
+				     TAS2562_INT_TCE, 0);
 	if (result < 0)
 		goto reload;
 
-	result = tas2562_write(tas_priv, TAS2562_InterruptMaskReg1, 0xb1);
+	result = tas2562_update_bits(tas_priv, TAS2562_INT_MASK1,
+				     TAS2562_INT_SPK_SL |
+				     TAS2562_INT_BDPD |
+				     TAS2562_INT_BPA |
+				     TAS2562_INT_VBAT_BD,
+				     TAS2562_INT_SPK_SL |
+				     TAS2562_INT_VBAT_BD);
 	if (result < 0)
 		goto reload;
 
@@ -601,9 +612,8 @@ static void init_work_routine(struct work_struct *work)
 	//dev_info(tas_priv->dev, "%s\n", __func__);
 	mutex_lock(&tas_priv->codec_lock);
 
-	tas2562_update_bits(tas_priv, TAS2562_PowerControl,
-		TAS2562_PowerControl_OperationalMode10_Mask,
-		TAS2562_PowerControl_OperationalMode10_Active);
+	tas2562_update_bits(tas_priv, TAS2562_PWR_CTL, TAS2562_MODE_MASK,
+			    TAS2562_MODE_ACTIVE);
 
 	//dev_info(tas_priv->dev, "set ICN to -80dB\n");
 	result = tas2562_bulk_write(tas_priv, TAS2562_ICN_REG, pICN, 4);
@@ -729,7 +739,7 @@ static int tas2562_i2c_probe(struct i2c_client *client,
 	mutex_init(&tas_priv->dev_lock);
 
 	/* Reset the chip */
-	result = tas2562_write(tas_priv, TAS2562_SoftwareReset, 0x01);
+	result = tas2562_write(tas_priv, TAS2562_SW_RESET, TAS2562_RESET);
 	if (result < 0) {
 		dev_err(&client->dev, "I2c fail, %d\n", result);
 		goto err;
@@ -742,7 +752,8 @@ static int tas2562_i2c_probe(struct i2c_client *client,
 				__func__, tas_priv->irq_gpio);
 			goto err;
 		}
-		tas2562_write(tas_priv, TAS2562_MiscConfigurationReg0, 0xcf);
+		tas2562_update_bits(tas_priv, TAS2562_MISC_CFG1,
+				    TAS2562_IRQZ_PU, TAS2562_IRQZ_PU);
 		gpio_direction_input(tas_priv->irq_gpio);
 		result = gpio_get_value(tas_priv->irq_gpio);
 		dev_info(tas_priv->dev, "irq GPIO state: %d\n", result);

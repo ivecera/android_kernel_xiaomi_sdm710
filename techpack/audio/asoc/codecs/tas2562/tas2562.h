@@ -4,171 +4,173 @@
 
 #define TAS2562_DRIVER_ID           "1.0.1"
 
+#define TAS2562_REG(book, page, reg)	(((book) << 15) | ((page) << 7) | reg)
+
 /* Page Control Register */
-#define TAS2562_PAGECTL_REG			0
+#define TAS2562_PAGE_CTRL		TAS2562_REG(0x00, 0x00, 0x00)
 
 /* Book Control Register (available in page0 of each book) */
-#define TAS2562_BOOKCTL_PAGE		0
-#define TAS2562_BOOKCTL_REG			127
-
-#define TAS2562_REG(book, page, reg)	(((book * 256 * 128) + \
-											(page * 128)) + reg)
-
+#define TAS2562_BOOK_CTRL		TAS2562_REG(0x00, 0x00, 0x7f)
 
 #define TAS2562_BOOK_ID(reg)			(reg / (256 * 128))
-
 #define TAS2562_PAGE_ID(reg)			((reg % (256 * 128)) / 128)
-
 #define TAS2562_BOOK_REG(reg)			(reg % (256 * 128))
-
 #define TAS2562_PAGE_REG(reg)			((reg % (256 * 128)) % 128)
 
+/* Software Reset */
+#define TAS2562_SW_RESET	TAS2562_REG(0x0, 0x0, 0x01)
+#define TAS2562_RESET		BIT(0)
 
-    /* Software Reset */
-#define TAS2562_SoftwareReset  TAS2562_REG(0x0, 0x0, 0x01)
-#define TAS2562_SoftwareReset_SoftwareReset_Mask  (0x1 << 0),
-#define TAS2562_SoftwareReset_SoftwareReset_DontReset  (0x0 << 0)
-#define TAS2562_SoftwareReset_SoftwareReset_Reset  (0x1 << 0)
+/* Power Control */
+#define TAS2562_PWR_CTL		TAS2562_REG(0x0, 0x0, 0x02)
+#define TAS2562_ISNS_PD		BIT(3)
+#define TAS2562_VSNS_PD		BIT(2)
+#define TAS2562_MODE_MASK	GENMASK(1, 0)
+#define TAS2562_MODE_ACTIVE	0x00
+#define TAS2562_MODE_MUTE	0x01
+#define TAS2562_MODE_SHUTDOWN	0x02
 
-    /* Power Control */
-#define TAS2562_PowerControl  TAS2562_REG(0x0, 0x0, 0x02)
-#define TAS2562_PowerControl_ISNSPower_Mask  (0x1 << 3)
-#define TAS2562_PowerControl_ISNSPower_Active  (0x0 << 3)
-#define TAS2562_PowerControl_ISNSPower_PoweredDown  (0x1 << 3)
-#define TAS2562_PowerControl_VSNSPower_Mask  (0x1 << 2)
-#define TAS2562_PowerControl_VSNSPower_Active  (0x0 << 2)
-#define TAS2562_PowerControl_VSNSPower_PoweredDown  (0x1 << 2)
-#define TAS2562_PowerControl_OperationalMode10_Mask  (0x3 << 0)
-#define TAS2562_PowerControl_OperationalMode10_Active  (0x0 << 0)
-#define TAS2562_PowerControl_OperationalMode10_Mute  (0x1 << 0)
-#define TAS2562_PowerControl_OperationalMode10_Shutdown  (0x2 << 0)
+/* Playback Configuration 1 */
+#define TAS2562_PB_CFG1		TAS2562_REG(0x0, 0x0, 0x03)
 
-    /* Playback Configuration Reg0 */
-#define TAS2562_PlaybackConfigurationReg0  TAS2562_REG(0x0, 0x0, 0x03)
+/* Misc Configuration 1 */
+#define TAS2562_MISC_CFG1	TAS2562_REG(0x0, 0x0, 0x04)
+#define TAS2562_IRQZ_PU		BIT(3)
 
-    /* Misc Configuration Reg0 */
-#define TAS2562_MiscConfigurationReg0  TAS2562_REG(0x0, 0x0, 0x04)
-#define TAS2562_MiscConfigurationReg0_IRQZPull_Mask  (0x1 << 3)
-#define TAS2562_MiscConfigurationReg0_IRQZPull_Disabled  (0x0 << 3)
-#define TAS2562_MiscConfigurationReg0_IRQZPull_Enabled  (0x1 << 3)
+/* TDM Configuration 0 */
+#define TAS2562_TDM_CFG0	TAS2562_REG(0x0, 0x0, 0x06)
+#define TAS2562_SAMP_RATE_MASK	(BIT(5) | GENMASK(3, 1))
+#define TAS2562_SAMP_RATE_48	(0x4 << 1)
+#define TAS2562_SAMP_RATE_96	(0x5 << 1)
+#define TAS2562_SAMP_RATE_192	(0x6 << 1)
+#define TAS2562_SAMP_RATE_44_1	(BIT(5) | (0x4 << 1))
+#define TAS2562_SAMP_RATE_88_2	(BIT(5) | (0x5 << 1))
+#define TAS2562_SAMP_RATE_176_4	(BIT(5) | (0x6 << 1))
 
-    /* TDM Configuration Reg0 */
-#define TAS2562_TDMConfigurationReg0  TAS2562_REG(0x0, 0x0, 0x06)
-#define TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask  (0x1 << 5)
-#define TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz  (0x0 << 5)
-#define TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz  (0x1 << 5)
-#define TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask  (0x7 << 1)
-#define TAS2562_TDMConfigurationReg0_SAMPRATE31_14_7_16kHz  (0x1 << 1)
-#define TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz  (0x4 << 1)
-#define TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz  (0x5 << 1)
-#define TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz  (0x6 << 1)
+/* TDM Configuration 1 */
+#define TAS2562_TDM_CFG1	TAS2562_REG(0x0, 0x0, 0x07)
+#define TAS2562_RX_OFFSET_MASK	GENMASK(5, 1)
+#define TAS2562_RX_OFFSET(X)	((X) << 1)
+#define TAS2562_RX_EDGE_MASK	BIT(0)
+#define TAS2562_RX_EDGE_RISING	0
+#define TAS2562_RX_EDGE_FALLING	1
 
-    /* TDM Configuration Reg1 */
-#define TAS2562_TDMConfigurationReg1  TAS2562_REG(0x0, 0x0, 0x07)
-#define TAS2562_TDMConfigurationReg1_RXOFFSET51_Mask  (0x1f << 1)
-#define TAS2562_TDMConfigurationReg1_RXOFFSET51_Shift (1)
-#define TAS2562_TDMConfigurationReg1_RXEDGE_Mask  (0x1 << 0)
-#define TAS2562_TDMConfigurationReg1_RXEDGE_Rising  (0x0 << 0)
-#define TAS2562_TDMConfigurationReg1_RXEDGE_Falling  (0x1 << 0)
+/* TDM Configuration 2 */
+#define TAS2562_TDM_CFG2	TAS2562_REG(0x0, 0x0, 0x08)
+#define TAS2562_RX_WLEN_MASK	GENMASK(3, 2)
+#define TAS2562_RX_WLEN_16	(0x0 << 2)
+#define TAS2562_RX_WLEN_20	(0x1 << 2)
+#define TAS2562_RX_WLEN_24	(0x2 << 2)
+#define TAS2562_RX_WLEN_32	(0x3 << 2)
+#define TAS2562_RX_SLEN_MASK	GENMASK(1, 0)
+#define TAS2562_RX_SLEN_16	(0x0 << 0)
+#define TAS2562_RX_SLEN_24	(0x1 << 0)
+#define TAS2562_RX_SLEN_32	(0x2 << 0)
 
-    /* TDM Configuration Reg2 */
-#define TAS2562_TDMConfigurationReg2  TAS2562_REG(0x0, 0x0, 0x08)
-#define TAS2562_TDMConfigurationReg2_RXWLEN32_Mask  (0x3 << 2)
-#define TAS2562_TDMConfigurationReg2_RXWLEN32_16Bits  (0x0 << 2)
-#define TAS2562_TDMConfigurationReg2_RXWLEN32_20Bits  (0x1 << 2)
-#define TAS2562_TDMConfigurationReg2_RXWLEN32_24Bits  (0x2 << 2)
-#define TAS2562_TDMConfigurationReg2_RXWLEN32_32Bits  (0x3 << 2)
-#define TAS2562_TDMConfigurationReg2_RXSLEN10_Mask  (0x3 << 0)
-#define TAS2562_TDMConfigurationReg2_RXSLEN10_16Bits  (0x0 << 0)
-#define TAS2562_TDMConfigurationReg2_RXSLEN10_24Bits  (0x1 << 0)
-#define TAS2562_TDMConfigurationReg2_RXSLEN10_32Bits  (0x2 << 0)
+/* TDM Configuration 4 */
+#define TAS2562_TDM_CFG4	TAS2562_REG(0x0, 0x0, 0x0A)
+#define TAS2562_TX_FILL_MASK	BIT(4)
+#define TAS2562_TX_OFFSET_MASK	GENMASK(3, 1)
+#define TAS2562_TX_OFFSET(X)	((X) << 1)
+#define TAS2562_TX_EDGE_MASK	BIT(0)
+#define TAS2562_TX_EDGE_FALLING	1
 
-    /* TDM Configuration Reg4 */
-#define TAS2562_TDMConfigurationReg4  TAS2562_REG(0x0, 0x0, 0x0A)
+/* TDM Configuration 5 */
+#define TAS2562_TDM_CFG5	TAS2562_REG(0x0, 0x0, 0x0B)
+#define TAS2562_VSNS_TX_EN	BIT(6)
+#define TAS2562_VSNS_SLOT_MASK	GENMASK(5, 0)
+#define TAS2562_VSNS_SLOT(X)	(X)
 
-    /* TDM Configuration Reg5 */
-#define TAS2562_TDMConfigurationReg5  TAS2562_REG(0x0, 0x0, 0x0B)
+/* TDM Configuration 6 */
+#define TAS2562_TDM_CFG6	TAS2562_REG(0x0, 0x0, 0x0C)
+#define TAS2562_ISNS_TX_EN	BIT(6)
+#define TAS2562_ISNS_SLOT_MASK	GENMASK(5, 0)
+#define TAS2562_ISNS_SLOT(X)	(X)
 
-    /* TDM Configuration Reg6 */
-#define TAS2562_TDMConfigurationReg6  TAS2562_REG(0x0, 0x0, 0x0C)
+/* Limiter Configuration 0 */
+#define TAS2562_LIM_CFG0	TAS2562_REG(0x0, 0x0, 0x12)
 
-    /* Limiter Configuration Reg0 */
-#define TAS2562_LimiterConfigurationReg0  TAS2562_REG(0x0, 0x0, 0x12)
+/* Interrupt Mask 0 */
+#define TAS2562_INT_MASK0	TAS2562_REG(0x0, 0x0, 0x1A)
+#define TAS2562_INT_TCE		BIT(2) /* TDM clock error */
+#define TAS2562_INT_OCE		BIT(1) /* Over current error */
+#define TAS2562_INT_OTE		BIT(0) /* Over temp error */
+#define TAS2562_INT_ALL		0xFF
 
-    /* Interrupt Mask Reg0 */
-#define TAS2562_InterruptMaskReg0  TAS2562_REG(0x0, 0x0, 0x1A)
-#define TAS2562_InterruptMaskReg0_Disable 0xff
+/* Interrupt Mask 1 */
+#define TAS2562_INT_MASK1	TAS2562_REG(0x0, 0x0, 0x1B)
+#define TAS2562_INT_SPK_SL	BIT(4) /* Speaker short load detection */
+#define TAS2562_INT_BDPD	BIT(2) /* Brownout device power down start */
+#define TAS2562_INT_BPA		BIT(1) /* Brownout protection active */
+#define TAS2562_INT_VBAT_BD	BIT(0) /* VBAT brownout detected */
 
-    /* Interrupt Mask Reg1 */
-#define TAS2562_InterruptMaskReg1  TAS2562_REG(0x0, 0x0, 0x1B)
-#define TAS2562_InterruptMaskReg1_Disable 0xff
+/* Latched Interrupt Readback 0 */
+#define TAS2562_INT_LTCH0	TAS2562_REG(0x0, 0x0, 0x24)
+#define TAS2562_INTS_TCE	BIT(2) /* TDM clock error */
+#define TAS2562_INTS_OCE	BIT(1) /* Over current error */
+#define TAS2562_INTS_OTE	BIT(0) /* Over temp error */
 
-    /* Latched-Interrupt Reg0 */
-#define TAS2562_LatchedInterruptReg0  TAS2562_REG(0x0, 0x0, 0x24)
-#define TAS2562_LatchedInterruptReg0_TDMClockErrorSticky_Mask  (0x1 << 2)
-#define TAS2562_LatchedInterruptReg0_TDMClockErrorSticky_NoInterrupt  (0x0 << 2)
-#define TAS2562_LatchedInterruptReg0_TDMClockErrorSticky_Interrupt  (0x1 << 2)
-#define TAS2562_LatchedInterruptReg0_OCEFlagSticky_Mask  (0x1 << 1)
-#define TAS2562_LatchedInterruptReg0_OCEFlagSticky_NoInterrupt  (0x0 << 1)
-#define TAS2562_LatchedInterruptReg0_OCEFlagSticky_Interrupt  (0x1 << 1)
-#define TAS2562_LatchedInterruptReg0_OTEFlagSticky_Mask  (0x1 << 0)
-#define TAS2562_LatchedInterruptReg0_OTEFlagSticky_NoInterrupt  (0x0 << 0)
-#define TAS2562_LatchedInterruptReg0_OTEFlagSticky_Interrupt  (0x1 << 0)
+/* Latched-Interrupt Readback 1 */
+#define TAS2562_INT_LTCH1	TAS2562_REG(0x0, 0x0, 0x25)
+#define TAS2562_INTS_SPK_OVOL	BIT(3) /* Speaker over voltage */
+#define TAS2562_INTS_SPK_UVOL	BIT(2) /* Speaker under voltage */
+#define TAS2562_INTS_BOF	BIT(1) /* Brown-out flag */
 
-    /* Latched-Interrupt Reg1 */
-#define TAS2562_LatchedInterruptReg1  TAS2562_REG(0x0, 0x0, 0x25)
-#define TAS2562_LatchedInterruptReg1_VBATOVLOSticky_Mask  (0x1 << 3)
-#define TAS2562_LatchedInterruptReg1_VBATOVLOSticky_NoInterrupt  (0x0 << 3)
-#define TAS2562_LatchedInterruptReg1_VBATOVLOSticky_Interrupt  (0x1 << 3)
-#define TAS2562_LatchedInterruptReg1_VBATUVLOSticky_Mask  (0x1 << 2)
-#define TAS2562_LatchedInterruptReg1_VBATUVLOSticky_NoInterrupt  (0x0 << 2)
-#define TAS2562_LatchedInterruptReg1_VBATUVLOSticky_Interrupt  (0x1 << 2)
-#define TAS2562_LatchedInterruptReg1_BrownOutFlagSticky_Mask  (0x1 << 1)
-#define TAS2562_LatchedInterruptReg1_BrownOutFlagSticky_NoInterrupt  (0x0 << 1)
-#define TAS2562_LatchedInterruptReg1_BrownOutFlagSticky_Interrupt  (0x1 << 1)
+/* Latched-Interrupt Readback 2 - 4 */
+#define TAS2562_INT_LTCH2	TAS2562_REG(0x0, 0x0, 0x28)
+#define TAS2562_INT_LTCH3	TAS2562_REG(0x0, 0x0, 0x26)
+#define TAS2562_INT_LTCH4	TAS2562_REG(0x0, 0x0, 0x27)
 
-#define TAS2562_LatchedInterruptReg2  TAS2562_REG(0x0, 0x0, 0x28)
-#define TAS2562_LatchedInterruptReg3  TAS2562_REG(0x0, 0x0, 0x26)
-#define TAS2562_LatchedInterruptReg4  TAS2562_REG(0x0, 0x0, 0x27)
+/* VBAT MSB */
+#define TAS2562_VBATMSB		TAS2562_REG(0x0, 0x0, 0x2A)
+#define TAS2562_VBAT_CNVH_MASK	GENMASK(7, 0)
 
-    /* VBAT MSB */
-#define TAS2562_VBATMSB  TAS2562_REG(0x0, 0x0, 0x2A)
-#define TAS2562_VBATMSB_VBATMSB70_Mask  (0xff << 0)
+/* VBAT LSB */
+#define TAS2562_VBATLSB		TAS2562_REG(0x0, 0x0, 0x2B)
+#define TAS2562_VBAT_CNVL_MASK	GENMASK(7, 6)
 
-    /* VBAT LSB */
-#define TAS2562_VBATLSB  TAS2562_REG(0x0, 0x0, 0x2B)
-#define TAS2562_VBATLSB_VBATLSB74_Mask  (0xf << 4)
+#define TAS2562_VBAT_CNV(H, L)	((((H) & TAS2562_VBAT_CNVH_MASK) << 2) | \
+				 (((L) & TAS2562_VBAT_CNVL_MASK) >> 6))
 
-    /* TEMP */
-#define TAS2562_TEMP  TAS2562_REG(0x0, 0x0, 0x2C)
-#define TAS2562_TEMP_TEMPMSB70_Mask  (0xff << 0)
+/* TEMP */
+#define TAS2562_TEMP		TAS2562_REG(0x0, 0x0, 0x2C)
+#define TAS2562_TEMP_CNV_MASK	GENMASK(7, 0)
 
 
-    /* Interrupt Configuration */
-#define TAS2562_InterruptConfiguration  TAS2562_REG(0x0, 0x0, 0x30)
-#define TAS2562_InterruptConfiguration_LTCHINTClear_Mask (0x1 << 2)
-#define TAS2562_InterruptConfiguration_LTCHINTClear (0x1 << 2)
+/* Interrupt Configuration */
+#define TAS2562_INT_CLK		TAS2562_REG(0x0, 0x0, 0x30)
+#define TAS2562_INT_CLR_LTCH	BIT(2)
 
-#define TAS2562_BoostSlope TAS2562_REG(0x0, 0x0, 0x35)
+/* Boost Configure 3 */
+#define TAS2562_BOOST_CFG3	TAS2562_REG(0x0, 0x0, 0x35)
 
-    /* Clock Configuration */
-#define TAS2562_ClockConfiguration  TAS2562_REG(0x0, 0x0, 0x38)
+/* Clock Configuration */
+#define TAS2562_CLK_CFG		TAS2562_REG(0x0, 0x0, 0x38)
 
-#define TAS2562_VBatFilter TAS2562_REG(0x0, 0x0, 0x3b)
-#define TAS2562_ClassHReleaseTimer TAS2562_REG(0x0, 0x0, 0x3c)
+#define TAS2562_VBAT_FLT	TAS2562_REG(0x0, 0x0, 0x3b)
+#define TAS2562_CLS_H_RTMR	TAS2562_REG(0x0, 0x0, 0x3c)
 
 #define TAS2562_ICN_REG TAS2562_REG(0x0, 0x2, 0x64)
 
-#define TAS2562_TestPageConfiguration TAS2562_REG(0x0, 0xfd, 0xd)
-#define TAS2562_ClassDConfiguration1	TAS2562_REG(0x0, 0xfd, 0x19)
-#define TAS2562_ClassDConfiguration2	TAS2562_REG(0x0, 0xfd, 0x32)
-#define TAS2562_ClassDConfiguration3	TAS2562_REG(0x0, 0xfd, 0x33)
-#define TAS2562_ClassDConfiguration4	TAS2562_REG(0x0, 0xfd, 0x3f)
-#define TAS2562_EfficiencyConfiguration	TAS2562_REG(0x0, 0xfd, 0x5f)
+#define TAS2562_TEST_PG_CFG	TAS2562_REG(0x0, 0xfd, 0xd)
+#define TAS2562_CLS_D_CFG1	TAS2562_REG(0x0, 0xfd, 0x19)
+#define TAS2562_CLS_D_CFG2	TAS2562_REG(0x0, 0xfd, 0x32)
+#define TAS2562_CLS_D_CFG3	TAS2562_REG(0x0, 0xfd, 0x33)
+#define TAS2562_CLS_D_CFG4	TAS2562_REG(0x0, 0xfd, 0x3f)
+#define TAS2562_EFFC_CFG	TAS2562_REG(0x0, 0xfd, 0x5f)
 
-#define TAS2562_ClassHHeadroom TAS2562_REG(0x64, 0x7, 0x48)
-#define TAS2562_ClassHHysteresis TAS2562_REG(0x64, 0x7, 0x4c)
-#define TAS2562_ClassHMtct TAS2562_REG(0x64, 0x5, 0x4c)
+#define TAS2562_CLS_H_HDRM_CFG0	TAS2562_REG(0x64, 0x7, 0x48)
+#define TAS2562_CLS_H_HDRM_CFG1	TAS2562_REG(0x64, 0x7, 0x49)
+#define TAS2562_CLS_H_HDRM_CFG2	TAS2562_REG(0x64, 0x7, 0x4a)
+#define TAS2562_CLS_H_HDRM_CFG3	TAS2562_REG(0x64, 0x7, 0x4b)
+#define TAS2562_CLS_H_HYST_CFG0	TAS2562_REG(0x64, 0x7, 0x4c)
+#define TAS2562_CLS_H_HYST_CFG1	TAS2562_REG(0x64, 0x7, 0x4d)
+#define TAS2562_CLS_H_HYST_CFG2	TAS2562_REG(0x64, 0x7, 0x4e)
+#define TAS2562_CLS_H_HYST_CFG3	TAS2562_REG(0x64, 0x7, 0x4f)
+#define TAS2562_CLS_H_MTCT_CFG0	TAS2562_REG(0x64, 0x5, 0x4c)
+#define TAS2562_CLS_H_MTCT_CFG1	TAS2562_REG(0x64, 0x5, 0x4d)
+#define TAS2562_CLS_H_MTCT_CFG2	TAS2562_REG(0x64, 0x5, 0x4e)
+#define TAS2562_CLS_H_MTCT_CFG3	TAS2562_REG(0x64, 0x5, 0x4f)
 
 #define TAS2562_POWER_ACTIVE 0
 #define TAS2562_POWER_MUTE 1
@@ -185,7 +187,7 @@
 #define ERROR_BROWNOUT		0x0000020
 #define ERROR_CLASSD_PWR	0x0000040
 #define ERROR_DEVA_I2C_COMM	0x0000080
-#define ERROR_FAILSAFE      0x4000000
+#define ERROR_FAILSAFE		0x4000000
 
 #define CHECK_PERIOD	5000	/* 5 second */
 
