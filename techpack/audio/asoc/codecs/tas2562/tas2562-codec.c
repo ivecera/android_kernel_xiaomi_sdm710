@@ -498,100 +498,51 @@ end:
 
 static int tas2562_set_samplerate(struct tas2562_priv *tas_priv, int samplerate)
 {
-	int ret = 0;
+	unsigned int samp_rate, ramp_rate;
+	int ret;
+
 	switch (samplerate) {
 	case 48000:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz);
-		if(ret < 0)
-			goto end;
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz;
 		break;
 	case 44100:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz);
-		if(ret < 0)
-			goto end;
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_44_1_48kHz;
 		break;
 	case 96000:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz);
-		if(ret < 0)
-			goto end;
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz;
 		break;
 	case 88200:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz);
-		if(ret < 0)
-			goto end;
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_88_2_96kHz;
 		break;
-	case 19200:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz);
-		if(ret < 0)
-			goto end;
+	case 192000:
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_48KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz;
 		break;
-	case 17640:
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz);
-		if(ret < 0)
-			goto end;
-		ret = tas2562_update_bits(tas_priv,
-				TAS2562_TDMConfigurationReg0,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
-				TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz);
-		if(ret < 0)
-			goto end;
+	case 176400:
+		ramp_rate = TAS2562_TDMConfigurationReg0_SAMPRATERAMP_44_1KHz;
+		samp_rate = TAS2562_TDMConfigurationReg0_SAMPRATE31_176_4_192kHz;
 		break;
 	default:
-			dev_info(tas_priv->dev, "%s, unsupported sample rate, %d\n", __func__, samplerate);
+		dev_err(tas_priv->dev, "%s, unsupported sample rate, %d\n",
+			__func__, samplerate);
 
+		return -EINVAL;
 	}
 
-end:
+	ret = tas2562_update_bits(tas_priv, TAS2562_TDMConfigurationReg0,
+				TAS2562_TDMConfigurationReg0_SAMPRATERAMP_Mask |
+				TAS2562_TDMConfigurationReg0_SAMPRATE31_Mask,
+				ramp_rate | samp_rate);
+	if (ret < 0)
+		return ret;
+
 	tas_priv->sample_rate = samplerate;
-	return ret;
+
+	return 0;
 }
 
 static int tas2562_mute_ctrl_get(struct snd_kcontrol *kcontrol,
