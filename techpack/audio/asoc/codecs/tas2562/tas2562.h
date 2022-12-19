@@ -231,8 +231,6 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		  unsigned int value);
 int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		       const unsigned char *buf, unsigned int len);
-int tas2562_bulk_read(struct tas2562_priv *tas_priv, unsigned int reg,
-		      unsigned char *buf, unsigned int len);
 int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 			unsigned int mask, unsigned int value);
 
