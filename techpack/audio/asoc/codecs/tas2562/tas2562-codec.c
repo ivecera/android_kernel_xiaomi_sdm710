@@ -52,29 +52,11 @@ static const struct soc_enum tas2562_enum[] = {
 };
 static int tas2562_set_fmt(struct tas2562_priv *tas_priv, unsigned int fmt);
 
-static int tas2562_i2c_load_data(struct tas2562_priv *tas_priv, unsigned int *buf);
 static int tas2562_mute_ctrl_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol);
 static int tas2562_mute_ctrl_put(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol);
 static int tas2562_load_init(struct tas2562_priv *tas_priv);
-static unsigned int p_tas2562_classH_D_data[] = {
-	/* reg address		size	values */
-	TAS2562_CLS_H_HDRM_CFG0,0x04,	0x09, 0x99, 0x99, 0x9A,
-	TAS2562_CLS_H_HYST_CFG0,0x04,	0x00, 0x00, 0x00, 0x00,
-	TAS2562_CLS_H_MTCT_CFG0,0x04,	0x0B, 0x00, 0x00, 0x00,
-	TAS2562_VBAT_FLT,	0x01,	0x38,
-	TAS2562_CLS_H_RTMR,	0x01,	0x3C,
-	TAS2562_BOOST_CFG3,	0x01,	0x78,
-	TAS2562_TEST_PG_CFG,	0x01,	0x0D,
-	TAS2562_CLS_D_CFG3,	0x01,	0x8E,
-	TAS2562_CLS_D_CFG2,	0x01,	0x49,
-	TAS2562_CLS_D_CFG4,	0x01,	0x21,
-	TAS2562_CLS_D_CFG1,	0x01,	0x80,
-	TAS2562_EFFC_CFG,	0x01,	0xC1,
-	UINT_MAX, UINT_MAX,
-};
-
 
 static unsigned int tas2562_codec_read(struct snd_soc_codec *codec,
 		unsigned int reg)
@@ -171,59 +153,46 @@ static int tas2562_codec_write(struct snd_soc_codec *codec, unsigned int reg,
 	return result;
 
 }
-static int tas2562_i2c_load_data(struct tas2562_priv *tas_priv, unsigned int *data)
-{
-	unsigned int reg;
-	unsigned int *ptr;
-	unsigned char buf[128];
-	unsigned int len = 0;
-	unsigned int i = 0;
-	unsigned int size = 0;
-	int result = 0;
-	do {
-		reg = data[len];
-		size = data[len + 1];
-		ptr = &data[len + 2];
-		if (reg == TAS2562_MSLEEP) {
-			msleep(ptr[0]);
-			dev_dbg(tas_priv->dev, "%s, msleep = %d\n",
-				__func__, ptr[0]);
-		} else if (reg == TAS2562_MDELAY) {
-			mdelay(ptr[0]);
-			dev_dbg(tas_priv->dev, "%s, mdelay = %d\n",
-				__func__, ptr[0]);
-		} else {
-			if (reg != 0xFFFFFFFF) {
-				if (size > 128) {
-					dev_err(tas_priv->dev,
-						"%s, Line=%d, invalid size, maximum is 128 bytes!\n",
-						__func__, __LINE__);
-					break;
-				}
-				if (size > 1) {
-					for (i = 0; i < size; i++)
-						buf[i] = (unsigned char)ptr[i];
-					result = tas2562_bulk_write(tas_priv, reg, buf, size);
-					if (result < 0)
-						break;
-				} else if (size == 1) {
-					result = tas2562_write(tas_priv, reg, ptr[0]);
-					if (result < 0)
-						break;
-				} else {
-					dev_err(tas_priv->dev,
-						"%s, Line=%d,invalid size, minimum is 1 bytes!\n",
-						__func__, __LINE__);
-				}
-			}
-		}
-		len = len + 2 + data[len + 1];
-	} while (reg != 0xFFFFFFFF);
 
-	if(result < 0)
+#define TAS2562_INIT_REG(REG, ...)				\
+do {								\
+	const u8 values[] = { __VA_ARGS__ };			\
+	dev_info(tas_priv->dev, "Init register %s\n", #REG);	\
+	if (ARRAY_SIZE(values) == 1)				\
+		ret = tas2562_write(tas_priv, REG, values[0]);	\
+	else							\
+		ret = tas2562_bulk_write(tas_priv, REG, values,	\
+					 ARRAY_SIZE(values));	\
+	if (ret < 0)						\
+		goto err;					\
+} while (0)
+
+static int tas2562_load_init_cfg(struct tas2562_priv *tas_priv)
+{
+	int ret;
+
+	TAS2562_INIT_REG(TAS2562_CLS_H_HDRM_CFG0, 0x09, 0x99, 0x99, 0x9A);
+	TAS2562_INIT_REG(TAS2562_CLS_H_HYST_CFG0, 0x00, 0x00, 0x00, 0x00);
+	TAS2562_INIT_REG(TAS2562_CLS_H_MTCT_CFG0, 0x0B, 0x00, 0x00, 0x00);
+	TAS2562_INIT_REG(TAS2562_VBAT_FLT, 0x38);
+	TAS2562_INIT_REG(TAS2562_CLS_H_RTMR, 0x3C);
+	TAS2562_INIT_REG(TAS2562_BOOST_CFG3, 0x78);
+	TAS2562_INIT_REG(TAS2562_TEST_PG_CFG, 0x0D);
+	TAS2562_INIT_REG(TAS2562_CLS_D_CFG3, 0x8E);
+	TAS2562_INIT_REG(TAS2562_CLS_D_CFG2, 0x49);
+	TAS2562_INIT_REG(TAS2562_CLS_D_CFG4, 0x21);
+	TAS2562_INIT_REG(TAS2562_CLS_D_CFG1, 0x80);
+	TAS2562_INIT_REG(TAS2562_EFFC_CFG, 0xC1);
+err:
+	dev_info(tas_priv->dev, "Loading initial configuration %s\n",
+		 ret < 0 ? "failed" : "succeeded");
+
+	if (ret < 0)
 		schedule_delayed_work(&tas_priv->irq_work, msecs_to_jiffies(2));
-	return result;
+
+	return ret;
 }
+
 static int tas2562_codec_suspend(struct snd_soc_codec *codec)
 {
 	struct tas2562_priv *tas_priv = snd_soc_codec_get_drvdata(codec);
@@ -759,7 +728,7 @@ static int tas2562_load_init(struct tas2562_priv *tas_priv)
 	if (ret < 0)
 		return ret;
 
-	ret = tas2562_i2c_load_data(tas_priv, p_tas2562_classH_D_data);
+	ret = tas2562_load_init_cfg(tas_priv);
 
 	return ret;
 }
