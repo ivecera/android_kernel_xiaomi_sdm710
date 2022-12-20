@@ -550,28 +550,6 @@ end:
 	mutex_unlock(&tas_priv->codec_lock);
 }
 
-static void init_work_routine(struct work_struct *work)
-{
-	struct tas2562_priv *tas_priv =
-		container_of(work, struct tas2562_priv, init_work.work);
-	int result = 0;
-	//int irq_reg;
-	//dev_info(tas_priv->dev, "%s\n", __func__);
-	mutex_lock(&tas_priv->codec_lock);
-
-	tas2562_update_bits(tas_priv, TAS2562_PWR_CTL, TAS2562_MODE_MASK,
-			    TAS2562_MODE_ACTIVE);
-
-	//dev_info(tas_priv->dev, "set ICN to -80dB\n");
-	result = tas2562_bulk_write(tas_priv, TAS2562_ICN_REG, pICN, 4);
-
-	result = gpio_get_value(tas_priv->irq_gpio);
-	//dev_info(tas_priv->dev, "%s, irq GPIO state: %d\n", __func__, result);
-
-	mutex_unlock(&tas_priv->codec_lock);
-}
-
-
 static irqreturn_t tas2562_irq_handler(int irq, void *dev_id)
 {
 	struct tas2562_priv *tas_priv = (struct tas2562_priv *)dev_id;
@@ -718,7 +696,6 @@ static int tas2562_i2c_probe(struct i2c_client *client,
 		}
 		tas2562_enable_irq(tas_priv, true);
 	}
-	INIT_DELAYED_WORK(&tas_priv->init_work, init_work_routine);
 
 	mutex_init(&tas_priv->codec_lock);
 	result = tas2562_register_codec(tas_priv);

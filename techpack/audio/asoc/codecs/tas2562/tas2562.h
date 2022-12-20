@@ -203,7 +203,6 @@ struct tas2562_priv {
 	struct regmap *regmap;
 	struct mutex dev_lock;
 	struct delayed_work irq_work;
-	struct delayed_work init_work;
 	struct hrtimer mtimer;
 	struct snd_soc_codec *codec;
 	bool power_up;
