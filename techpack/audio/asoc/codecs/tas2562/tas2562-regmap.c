@@ -146,7 +146,7 @@ static int tas2562_change_page(struct tas2562_priv *tas_priv, u8 page)
 	return ret;
 }
 
-static int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book)
+int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book)
 {
 	u8 cur_page = tas_priv->cur_page;
 	int ret;
@@ -181,10 +181,6 @@ int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_book(tas_priv, TAS2562_BOOK_ID(reg));
-	if (result < 0)
-		goto end;
-
 	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
 	if (result < 0)
 		goto end;
@@ -211,10 +207,6 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 	int result = 0;
 
 	mutex_lock(&tas_priv->dev_lock);
-
-	result = tas2562_change_book(tas_priv, TAS2562_BOOK_ID(reg));
-	if (result < 0)
-		goto end;
 
 	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
 	if (result < 0)
@@ -244,10 +236,6 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_book(tas_priv, TAS2562_BOOK_ID(reg));
-	if (result < 0)
-		goto end;
-
 	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
 	if (result < 0)
 		goto end;
@@ -275,10 +263,6 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 	int result = 0;
 
 	mutex_lock(&tas_priv->dev_lock);
-
-	result = tas2562_change_book(tas_priv, TAS2562_BOOK_ID(reg));
-	if (result < 0)
-		goto end;
 
 	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
 	if (result < 0)
@@ -329,7 +313,7 @@ void tas2562_hw_reset(struct tas2562_priv *tas_priv)
 	}
 	dev_err(tas_priv->dev, "gpio up !!\n");
 
-	tas_priv->cur_book = -1;
+	tas_priv->cur_book = 0;
 	tas_priv->cur_page = -1;
 	tas_priv->err_code = 0;
 }

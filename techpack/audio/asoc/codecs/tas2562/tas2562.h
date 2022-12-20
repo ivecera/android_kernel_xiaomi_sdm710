@@ -159,18 +159,21 @@
 #define TAS2562_CLS_D_CFG4	TAS2562_REG(0x0, 0xfd, 0x3f)
 #define TAS2562_EFFC_CFG	TAS2562_REG(0x0, 0xfd, 0x5f)
 
-#define TAS2562_CLS_H_HDRM_CFG0	TAS2562_REG(0x64, 0x7, 0x48)
-#define TAS2562_CLS_H_HDRM_CFG1	TAS2562_REG(0x64, 0x7, 0x49)
-#define TAS2562_CLS_H_HDRM_CFG2	TAS2562_REG(0x64, 0x7, 0x4a)
-#define TAS2562_CLS_H_HDRM_CFG3	TAS2562_REG(0x64, 0x7, 0x4b)
-#define TAS2562_CLS_H_HYST_CFG0	TAS2562_REG(0x64, 0x7, 0x4c)
-#define TAS2562_CLS_H_HYST_CFG1	TAS2562_REG(0x64, 0x7, 0x4d)
-#define TAS2562_CLS_H_HYST_CFG2	TAS2562_REG(0x64, 0x7, 0x4e)
-#define TAS2562_CLS_H_HYST_CFG3	TAS2562_REG(0x64, 0x7, 0x4f)
-#define TAS2562_CLS_H_MTCT_CFG0	TAS2562_REG(0x64, 0x5, 0x4c)
-#define TAS2562_CLS_H_MTCT_CFG1	TAS2562_REG(0x64, 0x5, 0x4d)
-#define TAS2562_CLS_H_MTCT_CFG2	TAS2562_REG(0x64, 0x5, 0x4e)
-#define TAS2562_CLS_H_MTCT_CFG3	TAS2562_REG(0x64, 0x5, 0x4f)
+#define TAS2562_DEF_BOOK_ID	0x00
+#define TAS2562_CLS_H_BOOK_ID	0x64
+
+#define TAS2562_CLS_H_HDRM_CFG0	TAS2562_REG(0x00, 0x7, 0x48)
+#define TAS2562_CLS_H_HDRM_CFG1	TAS2562_REG(0x00, 0x7, 0x49)
+#define TAS2562_CLS_H_HDRM_CFG2	TAS2562_REG(0x00, 0x7, 0x4a)
+#define TAS2562_CLS_H_HDRM_CFG3	TAS2562_REG(0x00, 0x7, 0x4b)
+#define TAS2562_CLS_H_HYST_CFG0	TAS2562_REG(0x00, 0x7, 0x4c)
+#define TAS2562_CLS_H_HYST_CFG1	TAS2562_REG(0x00, 0x7, 0x4d)
+#define TAS2562_CLS_H_HYST_CFG2	TAS2562_REG(0x00, 0x7, 0x4e)
+#define TAS2562_CLS_H_HYST_CFG3	TAS2562_REG(0x00, 0x7, 0x4f)
+#define TAS2562_CLS_H_MTCT_CFG0	TAS2562_REG(0x00, 0x5, 0x4c)
+#define TAS2562_CLS_H_MTCT_CFG1	TAS2562_REG(0x00, 0x5, 0x4d)
+#define TAS2562_CLS_H_MTCT_CFG2	TAS2562_REG(0x00, 0x5, 0x4e)
+#define TAS2562_CLS_H_MTCT_CFG3	TAS2562_REG(0x00, 0x5, 0x4f)
 
 #define TAS2562_POWER_ACTIVE 0
 #define TAS2562_POWER_MUTE 1
@@ -233,6 +236,7 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		       const unsigned char *buf, unsigned int len);
 int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 			unsigned int mask, unsigned int value);
+int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book);
 
 void tas2562_hw_reset(struct tas2562_priv *tas_priv);
 void tas2562_enable_irq(struct tas2562_priv *tas_priv, bool enable);

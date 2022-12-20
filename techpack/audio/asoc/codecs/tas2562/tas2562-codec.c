@@ -171,9 +171,18 @@ static int tas2562_load_init_cfg(struct tas2562_priv *tas_priv)
 {
 	int ret;
 
+	/* Class-H registers are in different book */
+	if (tas2562_change_book(tas_priv, TAS2562_CLS_H_BOOK_ID) < 0)
+		goto err;
+
 	TAS2562_INIT_REG(TAS2562_CLS_H_HDRM_CFG0, 0x09, 0x99, 0x99, 0x9A);
 	TAS2562_INIT_REG(TAS2562_CLS_H_HYST_CFG0, 0x00, 0x00, 0x00, 0x00);
 	TAS2562_INIT_REG(TAS2562_CLS_H_MTCT_CFG0, 0x0B, 0x00, 0x00, 0x00);
+
+	/* Return back to default book for the rest of registers */
+	if (tas2562_change_book(tas_priv, TAS2562_DEF_BOOK_ID) < 0)
+		goto err;
+
 	TAS2562_INIT_REG(TAS2562_VBAT_FLT, 0x38);
 	TAS2562_INIT_REG(TAS2562_CLS_H_RTMR, 0x3C);
 	TAS2562_INIT_REG(TAS2562_BOOST_CFG3, 0x78);
