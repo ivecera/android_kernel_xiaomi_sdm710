@@ -192,6 +192,7 @@ static int tas2562_load_init_cfg(struct tas2562_priv *tas_priv)
 	TAS2562_INIT_REG(TAS2562_CLS_D_CFG4, 0x21);
 	TAS2562_INIT_REG(TAS2562_CLS_D_CFG1, 0x80);
 	TAS2562_INIT_REG(TAS2562_EFFC_CFG, 0xC1);
+	TAS2562_INIT_REG(TAS2562_IDC_CFG0, 0x00, 0x03, 0x46, 0xDC);
 err:
 	dev_info(tas_priv->dev, "Loading initial configuration %s\n",
 		 ret < 0 ? "failed" : "succeeded");

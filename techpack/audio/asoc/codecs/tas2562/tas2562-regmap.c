@@ -36,8 +36,6 @@
 #include "tas2562.h"
 #include "tas2562-codec.h"
 
-static char pICN[] = {0x00, 0x03, 0x46, 0xdc};
-
 static int tas2562_regmap_write(struct tas2562_priv *tas_priv,
 	unsigned int reg, unsigned int value)
 {
@@ -489,11 +487,6 @@ static void irq_work_routine(struct work_struct *work)
 			result = tas2562_update_bits(tas_priv, TAS2562_PWR_CTL,
 						     TAS2562_MODE_MASK,
 						     TAS2562_MODE_ACTIVE);
-			if (result < 0)
-				goto reload;
-
-			dev_info(tas_priv->dev, "set ICN to -80dB\n");
-			result = tas2562_bulk_write(tas_priv, TAS2562_ICN_REG, pICN, 4);
 			if (result < 0)
 				goto reload;
 
