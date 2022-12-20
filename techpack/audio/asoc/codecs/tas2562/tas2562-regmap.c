@@ -128,25 +128,6 @@ static int tas2562_regmap_update_bits(struct tas2562_priv *tas_priv,
 		return 0;
 }
 
-int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book)
-{
-	int ret;
-
-	if (tas_priv->cur_book == book)
-		return 0;
-
-	/* Update book register */
-	ret = tas2562_regmap_write(tas_priv, TAS2562_BOOK_CTRL, book);
-	if (ret < 0) {
-		dev_err(tas_priv->dev, "Failed to change book, rc=%d\n", ret);
-		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
-	} else {
-		tas_priv->cur_book = book;
-	}
-
-	return ret;
-}
-
 int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 		 unsigned int *pvalue)
 {
@@ -161,9 +142,8 @@ int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
 	}
 	else
-		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u\n", __func__,
-			tas_priv->cur_book, TAS2562_PAGE_ID(reg),
-			TAS2562_PAGE_REG(reg));
+		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u\n", __func__,
+			TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg));
 
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
@@ -183,9 +163,9 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
 	}
 	else
-		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, VAL: 0x%02x\n",
-			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
-			TAS2562_PAGE_REG(reg), value);
+		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u, VAL: 0x%02x\n",
+			__func__, TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg),
+			value);
 
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
@@ -205,9 +185,9 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
 	}
 	else
-		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, len: 0x%02x\n",
-			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
-			TAS2562_PAGE_REG(reg), len);
+		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u, len: 0x%02x\n",
+			__func__, TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg),
+			len);
 
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
@@ -227,9 +207,9 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
 	}
 	else
-		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, mask: 0x%x, val=0x%x\n",
-			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
-			TAS2562_PAGE_REG(reg), mask, value);
+		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u, mask: 0x%x, val=0x%x\n",
+			__func__, TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg),
+			mask, value);
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
 }
@@ -278,7 +258,6 @@ void tas2562_hw_reset(struct tas2562_priv *tas_priv)
 	}
 	dev_err(tas_priv->dev, "gpio up !!\n");
 
-	tas_priv->cur_book = 0;
 	tas_priv->err_code = 0;
 }
 

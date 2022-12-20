@@ -235,7 +235,6 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		       const unsigned char *buf, unsigned int len);
 int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 			unsigned int mask, unsigned int value);
-int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book);
 
 void tas2562_hw_reset(struct tas2562_priv *tas_priv);
 void tas2562_enable_irq(struct tas2562_priv *tas_priv, bool enable);
