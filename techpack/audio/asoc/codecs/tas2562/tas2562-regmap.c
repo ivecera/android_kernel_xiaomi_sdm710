@@ -59,29 +59,6 @@ static int tas2562_regmap_write(struct tas2562_priv *tas_priv,
 		return 0;
 }
 
-static int tas2562_regmap_bulk_write(struct tas2562_priv *tas_priv,
-	unsigned int reg, const unsigned char *buf, unsigned int len)
-{
-	int result = 0;
-	int retry_count = TAS2562_I2C_RETRY_COUNT;
-
-	if(tas_priv->i2c_suspend)
-		return ERROR_I2C_SUSPEND;
-
-	while(retry_count --)
-	{
-		result = regmap_bulk_write(tas_priv->regmap, reg,
-			 buf, len);
-		if (result >= 0)
-			break;
-		msleep(20);
-	}
-	if(retry_count == -1)
-		return ERROR_I2C_FAILED;
-	else
-		return 0;
-}
-
 static int tas2562_regmap_read(struct tas2562_priv *tas_priv,
 	unsigned int reg, unsigned int *value)
 {
@@ -166,28 +143,6 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u, VAL: 0x%02x\n",
 			__func__, TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg),
 			value);
-
-	mutex_unlock(&tas_priv->dev_lock);
-	return result;
-}
-
-int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
-		       const unsigned char *buf, unsigned int len)
-{
-	int result = 0;
-
-	mutex_lock(&tas_priv->dev_lock);
-
-	result = tas2562_regmap_bulk_write(tas_priv, reg, buf, len);
-	if (result < 0) {
-		dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
-			__func__, __LINE__, result);
-		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
-	}
-	else
-		dev_dbg(tas_priv->dev, "%s: PAGE:REG %u:%u, len: 0x%02x\n",
-			__func__, TAS2562_PAGE_ID(reg), TAS2562_PAGE_REG(reg),
-			len);
 
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
