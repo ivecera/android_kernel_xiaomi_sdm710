@@ -191,7 +191,7 @@ int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 	}
 	else
 		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u\n", __func__,
-			TAS2562_BOOK_ID(reg), TAS2562_PAGE_ID(reg),
+			tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg));
 
 end:
@@ -219,7 +219,7 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 	}
 	else
 		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, VAL: 0x%02x\n",
-			__func__, TAS2562_BOOK_ID(reg), TAS2562_PAGE_ID(reg),
+			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), value);
 
 end:
@@ -247,7 +247,7 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 	}
 	else
 		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, len: 0x%02x\n",
-			__func__, TAS2562_BOOK_ID(reg), TAS2562_PAGE_ID(reg),
+			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), len);
 
 end:
@@ -275,7 +275,7 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 	}
 	else
 		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, mask: 0x%x, val=0x%x\n",
-			__func__, TAS2562_BOOK_ID(reg), TAS2562_PAGE_ID(reg),
+			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), mask, value);
 end:
 	mutex_unlock(&tas_priv->dev_lock);
