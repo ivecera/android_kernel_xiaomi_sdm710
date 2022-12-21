@@ -220,8 +220,6 @@ struct tas2562_priv {
 	int pcm_format;
 	bool muted;
 	bool i2c_suspend;
-	/* device is working, but system is suspended */
-	bool runtime_suspended;
 
 	unsigned int err_code;
 	struct mutex codec_lock;

@@ -171,12 +171,20 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 
 static bool tas2562_volatile(struct device *dev, unsigned int reg)
 {
-	return true;
-}
+	switch (reg) {
+	case TAS2562_INT_LTCH0:
+	case TAS2562_INT_LTCH1:
+	case TAS2562_INT_LTCH2:
+	case TAS2562_INT_LTCH3:
+	case TAS2562_INT_LTCH4:
+	case TAS2562_VBATMSB:
+	case TAS2562_VBATLSB:
+	case TAS2562_TEMP:
+	case TAS2562_INT_CLK:
+                return true;
+	}
 
-static bool tas2562_writeable(struct device *dev, unsigned int reg)
-{
-	return true;
+	return false;
 }
 
 static const struct regmap_range_cfg tas2562_ranges[] = {
@@ -191,17 +199,70 @@ static const struct regmap_range_cfg tas2562_ranges[] = {
 	},
 };
 
+static struct reg_default tas2562_reg_defaults[] = {
+	{ TAS2562_PAGE_CTRL,	0x00 },
+	{ TAS2562_BOOK_CTRL,	0x00 },
+	{ TAS2562_SW_RESET,	0x00 },
+	{ TAS2562_PWR_CTL,	0x0e },
+	{ TAS2562_PB_CFG1,	0x20 },
+	{ TAS2562_MISC_CFG1,	0xc6 },
+	{ TAS2562_TDM_CFG0,	0x09 },
+	{ TAS2562_TDM_CFG1,	0x02 },
+	{ TAS2562_TDM_CFG2,	0x0a },
+	{ TAS2562_TDM_CFG4,	0x13 },
+	{ TAS2562_TDM_CFG5,	0x02 },
+	{ TAS2562_TDM_CFG6,	0x00 },
+	{ TAS2562_LIM_CFG0,	0x12 },
+	{ TAS2562_INT_MASK0,	0xfc },
+	{ TAS2562_INT_MASK1,	0xa6 },
+	{ TAS2562_INT_LTCH0,	0x00 },
+	{ TAS2562_INT_LTCH1,	0x00 },
+	{ TAS2562_INT_LTCH2,	0x00 },
+	{ TAS2562_INT_LTCH3,	0x00 },
+	{ TAS2562_INT_LTCH4,	0x00 },
+	{ TAS2562_VBATMSB,	0x00 },
+	{ TAS2562_VBATLSB,	0x00 },
+	{ TAS2562_TEMP,		0x00 },
+	{ TAS2562_INT_CLK,	0x19 },
+	{ TAS2562_BOOST_CFG3,	0x74 },
+	{ TAS2562_CLK_CFG,	0x0d },
+	{ TAS2562_VBAT_FLT,	0x58 },
+	{ TAS2562_CLS_H_RTMR,	0x38 },
+	{ TAS2562_IDC_CFG0,	0x00 },
+	{ TAS2562_IDC_CFG1,	0x20 },
+	{ TAS2562_IDC_CFG2,	0xc4 },
+	{ TAS2562_IDC_CFG3,	0x9c },
+	{ TAS2562_TEST_PG_CFG,	0x00 },
+	{ TAS2562_CLS_D_CFG1,	0x00 },
+	{ TAS2562_CLS_D_CFG2,	0x00 },
+	{ TAS2562_CLS_D_CFG3,	0x00 },
+	{ TAS2562_CLS_D_CFG4,	0x00 },
+	{ TAS2562_EFFC_CFG,	0x00 },
+	{ TAS2562_CLS_H_HDRM_CFG0,	0x04 },
+	{ TAS2562_CLS_H_HDRM_CFG1,	0xcc },
+	{ TAS2562_CLS_H_HDRM_CFG2,	0xcc },
+	{ TAS2562_CLS_H_HDRM_CFG3,	0xcd },
+	{ TAS2562_CLS_H_HYST_CFG0,	0x03 },
+	{ TAS2562_CLS_H_HYST_CFG1,	0x33 },
+	{ TAS2562_CLS_H_HYST_CFG2,	0x33 },
+	{ TAS2562_CLS_H_HYST_CFG3,	0x33 },
+	{ TAS2562_CLS_H_MTCT_CFG0,	0x0b },
+	{ TAS2562_CLS_H_MTCT_CFG1,	0x00 },
+	{ TAS2562_CLS_H_MTCT_CFG2,	0x00 },
+	{ TAS2562_CLS_H_MTCT_CFG3,	0x00 },
+};
+
 static const struct regmap_config tas2562_i2c_regmap = {
 	.reg_bits = 8,
 	.val_bits = 8,
-	.writeable_reg = tas2562_writeable,
 	.volatile_reg = tas2562_volatile,
-	.cache_type = REGCACHE_NONE,
+	.cache_type = REGCACHE_RBTREE,
 	.max_register = 0xfe * 128,
+	.reg_defaults = tas2562_reg_defaults,
+	.num_reg_defaults = ARRAY_SIZE(tas2562_reg_defaults),
 	.ranges = tas2562_ranges,
 	.num_ranges = ARRAY_SIZE(tas2562_ranges),
 };
-
 
 void tas2562_hw_reset(struct tas2562_priv *tas_priv)
 {
@@ -250,11 +311,6 @@ static void irq_work_routine(struct work_struct *work)
 	tas2562_enable_irq(tas_priv, false);
 	result = gpio_get_value(tas_priv->irq_gpio);
 	dev_info(tas_priv->dev, "%s, irq GPIO state: %d\n", __func__, result);
-
-	if (tas_priv->runtime_suspended) {
-		dev_info(tas_priv->dev, "%s, Runtime Suspended\n", __func__);
-		goto end;
-	}
 
 	if (tas_priv->power_state == TAS2562_POWER_SHUTDOWN) {
 		dev_info(tas_priv->dev, "%s, device not powered\n", __func__);
@@ -455,12 +511,13 @@ int tas2562_runtime_suspend(struct tas2562_priv *tas_priv)
 {
 	dev_dbg(tas_priv->dev, "%s\n", __func__);
 
-	tas_priv->runtime_suspended = true;
-
 	if (delayed_work_pending(&tas_priv->irq_work)) {
 		dev_dbg(tas_priv->dev, "cancel IRQ work\n");
 		cancel_delayed_work_sync(&tas_priv->irq_work);
 	}
+
+	regcache_cache_only(tas_priv->regmap, true);
+	regcache_mark_dirty(tas_priv->regmap);
 
 	return 0;
 }
@@ -469,9 +526,8 @@ int tas2562_runtime_resume(struct tas2562_priv *tas_priv)
 {
 	dev_dbg(tas_priv->dev, "%s\n", __func__);
 
-	tas_priv->runtime_suspended = false;
-
-	return 0;
+	regcache_cache_only(tas_priv->regmap, false);
+	return regcache_sync(tas_priv->regmap);
 }
 
 static int tas2562_parse_dt(struct device *dev, struct tas2562_priv *tas_priv)
