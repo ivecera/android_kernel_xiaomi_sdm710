@@ -157,14 +157,14 @@ static int tas2562_codec_write(struct snd_soc_codec *codec, unsigned int reg,
 #define TAS2562_INIT_REG(REG, ...)				\
 do {								\
 	const u8 values[] = { __VA_ARGS__ };			\
+	int x = 0;						\
 	dev_info(tas_priv->dev, "Init register %s\n", #REG);	\
-	if (ARRAY_SIZE(values) == 1)				\
-		ret = tas2562_write(tas_priv, REG, values[0]);	\
-	else							\
-		ret = tas2562_bulk_write(tas_priv, REG, values,	\
-					 ARRAY_SIZE(values));	\
-	if (ret < 0)						\
-		goto err;					\
+	for (x = 0; x < ARRAY_SIZE(values); x++) {		\
+		ret = tas2562_write(tas_priv, REG + x,		\
+				    values[x]);			\
+		if (ret < 0)					\
+			goto err;				\
+	}							\
 } while (0)
 
 static int tas2562_load_init_cfg(struct tas2562_priv *tas_priv)
