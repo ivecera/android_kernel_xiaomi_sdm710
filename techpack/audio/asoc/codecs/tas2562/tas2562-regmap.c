@@ -128,34 +128,12 @@ static int tas2562_regmap_update_bits(struct tas2562_priv *tas_priv,
 		return 0;
 }
 
-static int tas2562_change_page(struct tas2562_priv *tas_priv, u8 page)
-{
-	int ret;
-
-	if (tas_priv->cur_page == page)
-		return 0;
-
-	ret = tas2562_regmap_write(tas_priv, TAS2562_PAGE_CTRL, page);
-	if (ret < 0) {
-		dev_err(tas_priv->dev, "Failed to change page, rc=%d\n", ret);
-		tas_priv->err_code |= ERROR_DEVA_I2C_COMM;
-	}
-
-	return ret;
-}
-
 int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book)
 {
-	u8 cur_page = tas_priv->cur_page;
 	int ret;
 
 	if (tas_priv->cur_book == book)
 		return 0;
-
-	/* Save current page and Change to page 0 */
-	ret = tas2562_change_page(tas_priv, 0);
-	if (ret < 0)
-		return ret;
 
 	/* Update book register */
 	ret = tas2562_regmap_write(tas_priv, TAS2562_BOOK_CTRL, book);
@@ -165,9 +143,6 @@ int tas2562_change_book(struct tas2562_priv *tas_priv, u8 book)
 	} else {
 		tas_priv->cur_book = book;
 	}
-
-	/* Restore previous page */
-	tas2562_change_page(tas_priv, cur_page);
 
 	return ret;
 }
@@ -179,11 +154,7 @@ int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
-	if (result < 0)
-		goto end;
-
-	result = tas2562_regmap_read(tas_priv, TAS2562_PAGE_REG(reg), pvalue);
+	result = tas2562_regmap_read(tas_priv, reg, pvalue);
 	if (result < 0) {
 		dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 			__func__, __LINE__, result);
@@ -194,7 +165,6 @@ int tas2562_read(struct tas2562_priv *tas_priv, unsigned int reg,
 			tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg));
 
-end:
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
 }
@@ -206,12 +176,7 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
-	if (result < 0)
-		goto end;
-
-	result = tas2562_regmap_write(tas_priv, TAS2562_PAGE_REG(reg),
-			value);
+	result = tas2562_regmap_write(tas_priv, reg, value);
 	if (result < 0) {
 		dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 			__func__, __LINE__, result);
@@ -222,7 +187,6 @@ int tas2562_write(struct tas2562_priv *tas_priv, unsigned int reg,
 			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), value);
 
-end:
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
 }
@@ -234,12 +198,7 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
-	if (result < 0)
-		goto end;
-
-	result = tas2562_regmap_bulk_write(tas_priv,
-		TAS2562_PAGE_REG(reg), buf, len);
+	result = tas2562_regmap_bulk_write(tas_priv, reg, buf, len);
 	if (result < 0) {
 		dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 			__func__, __LINE__, result);
@@ -250,7 +209,6 @@ int tas2562_bulk_write(struct tas2562_priv *tas_priv, unsigned int reg,
 			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), len);
 
-end:
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
 }
@@ -262,12 +220,7 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 
 	mutex_lock(&tas_priv->dev_lock);
 
-	result = tas2562_change_page(tas_priv, TAS2562_PAGE_ID(reg));
-	if (result < 0)
-		goto end;
-
-	result = tas2562_regmap_update_bits(tas_priv,
-	TAS2562_PAGE_REG(reg), mask, value);
+	result = tas2562_regmap_update_bits(tas_priv, reg, mask, value);
 	if (result < 0) {
 		dev_err(tas_priv->dev, "%s, ERROR, L=%d, E=%d\n",
 			__func__, __LINE__, result);
@@ -277,7 +230,6 @@ int tas2562_update_bits(struct tas2562_priv *tas_priv, unsigned int reg,
 		dev_dbg(tas_priv->dev, "%s: BOOK:PAGE:REG %u:%u:%u, mask: 0x%x, val=0x%x\n",
 			__func__, tas_priv->cur_book, TAS2562_PAGE_ID(reg),
 			TAS2562_PAGE_REG(reg), mask, value);
-end:
 	mutex_unlock(&tas_priv->dev_lock);
 	return result;
 }
@@ -291,13 +243,28 @@ static bool tas2562_writeable(struct device *dev, unsigned int reg)
 {
 	return true;
 }
+
+static const struct regmap_range_cfg tas2562_ranges[] = {
+	{
+		.range_min = 0,
+		.range_max = 0xfe * 128, /* max used page + 1 */
+		.selector_reg = TAS2562_PAGE_CTRL,
+		.selector_mask = 0xff,
+		.selector_shift = 0,
+		.window_start = 0,
+		.window_len = 128, /* page size = 128 registers */
+	},
+};
+
 static const struct regmap_config tas2562_i2c_regmap = {
 	.reg_bits = 8,
 	.val_bits = 8,
 	.writeable_reg = tas2562_writeable,
 	.volatile_reg = tas2562_volatile,
 	.cache_type = REGCACHE_NONE,
-	.max_register = 1 * 128,
+	.max_register = 0xfe * 128,
+	.ranges = tas2562_ranges,
+	.num_ranges = ARRAY_SIZE(tas2562_ranges),
 };
 
 
@@ -312,7 +279,6 @@ void tas2562_hw_reset(struct tas2562_priv *tas_priv)
 	dev_err(tas_priv->dev, "gpio up !!\n");
 
 	tas_priv->cur_book = 0;
-	tas_priv->cur_page = -1;
 	tas_priv->err_code = 0;
 }
 

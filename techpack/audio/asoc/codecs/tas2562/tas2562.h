@@ -209,7 +209,6 @@ struct tas2562_priv {
 	bool power_up;
 	int power_state;
 	int cur_book;
-	int cur_page;
 	int asi_format;
 	int reset_gpio;
 	int irq_gpio;
