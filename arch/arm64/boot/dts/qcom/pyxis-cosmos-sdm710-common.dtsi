@@ -294,6 +294,8 @@
 	tas2562@4c {
 		compatible = "ti,tas2562";
 		reg = <0x4c>;
+		shutdown-gpios = <&tlmm 95 0>;
+		#sound-dai-cells = <1>;
 		ti,reset-gpio = <&tlmm 95 0>;
 		ti,irq-gpio = <&tlmm 96 0>;
 		ti,asi-format = <0>; /* 0, i2S; 1, DSP;  */

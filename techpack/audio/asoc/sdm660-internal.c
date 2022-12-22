@@ -2774,7 +2774,7 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
 		.codec_dai_name = "cs35l41-pcm",
 #elif IS_ENABLED(CONFIG_MACH_XIAOMI_PYXIS_OR_VELA)
 		.codec_name = "tas2562.2-004c",
-		.codec_dai_name = "tas2562 ASI1",
+		.codec_dai_name = "tas2562-amplifier",
 #else
 		.codec_name = "msm-stub-codec.1",
 		.codec_dai_name = "msm-stub-rx",
@@ -2794,7 +2794,7 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
 		.platform_name = "msm-pcm-routing",
 #if IS_ENABLED(CONFIG_MACH_XIAOMI_PYXIS_OR_VELA)
 		.codec_name = "tas2562.2-004c",
-		.codec_dai_name = "tas2562 ASI1",
+		.codec_dai_name = "tas2562-amplifier",
 #else
 		.codec_name = "msm-stub-codec.1",
 		.codec_dai_name = "msm-stub-tx",
