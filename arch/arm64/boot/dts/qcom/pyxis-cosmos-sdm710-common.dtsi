@@ -391,6 +391,12 @@
 	qcom,platform-reset-gpio = <&tlmm 75 0>;
 };
 
+&pm660l_3 {
+		qcom,leds@d000 {
+			qcom,rgb-sync;
+		};
+};
+
 &red_led {
 	linux,name = "red";
 	qcom,start-idx = <0>;
