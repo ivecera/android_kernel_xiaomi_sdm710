@@ -400,6 +400,7 @@
 		32 32 31 30 2E 2C 2A 27 25 21 1E 1B 17 14 11 0D 0B 08 06 04 02 01 00];
 	qcom,ramp-step-ms = <73>;
 	qcom,pause-lo = <10>;
+	qcom,lut-flags = <0x1f>; /* loop, ramp-up, reverse, pause hi & lo */
 	qcom,use-blink;
 };
 
@@ -412,6 +413,7 @@
 		32 32 31 30 2E 2C 2A 27 25 21 1E 1B 17 14 11 0D 0B 08 06 04 02 01 00];
 	qcom,ramp-step-ms = <73>;
 	qcom,pause-lo = <10>;
+	qcom,lut-flags = <0x1f>; /* loop, ramp-up, reverse, pause hi & lo */
 	qcom,use-blink;
 };
 
@@ -424,6 +426,7 @@
 		32 32 31 30 2E 2C 2A 27 25 21 1E 1B 17 14 11 0D 0B 08 06 04 02 01 00];
 	qcom,ramp-step-ms = <73>;
 	qcom,pause-lo = <10>;
+	qcom,lut-flags = <0x1f>; /* loop, ramp-up, reverse, pause hi & lo */
 	qcom,use-blink;
 };
 
